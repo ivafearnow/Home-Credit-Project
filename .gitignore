@@ -1,0 +1,27 @@
+.DS_Store
+.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Generated project artifacts
+data/raw/*
+data/interim/*
+data/processed/*
+models/*
+outputs/figures/*
+outputs/tables/*
+outputs/metrics/*
+outputs/submissions/*
+
+# Keep empty artifact directories in Git
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+!models/.gitkeep
+!outputs/figures/.gitkeep
+!outputs/tables/.gitkeep
+!outputs/metrics/.gitkeep
+!outputs/submissions/.gitkeep
