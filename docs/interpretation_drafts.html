@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>interpretation_drafts</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="interpretation_drafts_files/libs/clipboard/clipboard.min.js"></script>
+<script src="interpretation_drafts_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="interpretation_drafts_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="interpretation_drafts_files/libs/quarto-html/popper.min.js"></script>
+<script src="interpretation_drafts_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="interpretation_drafts_files/libs/quarto-html/anchor.min.js"></script>
+<link href="interpretation_drafts_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="interpretation_drafts_files/libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="interpretation_drafts_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="interpretation_drafts_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="interpretation_drafts_files/libs/bootstrap/bootstrap-917079515d91bccb85b543faf8aa8bb6.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+
+
+
+<section id="interpretation-notes-01_eda.ipynb" class="level1">
+<h1>Interpretation Notes — <code>01_eda.ipynb</code></h1>
+<p>For each result: what the output actually says, why it matters, and a plain version to rewrite in your own words. Read the first two parts until the finding makes sense to you. Then write the paragraph yourself. Don’t paste the third part as-is.</p>
+<hr>
+<section id="s1-grain-keys-duplicates" class="level2">
+<h2 class="anchored" data-anchor-id="s1-grain-keys-duplicates">S1 — Grain, keys, duplicates</h2>
+<p><strong>What I found:</strong> 307,511 training rows, 48,744 test rows. Every row has its own ID. No duplicate rows. Nobody appears in both files.</p>
+<p><strong>Why it matters:</strong> One row is one <em>application</em>, not one <em>person</em>. Someone who applied twice shows up twice, and nothing links those two rows.</p>
+<p><strong>Write something like:</strong> &gt; Each row here is a loan application, not a customer. If someone applied twice they appear twice, and &gt; nothing in this file connects those rows. So every rate I report below is a rate per application. I &gt; should not describe any of them as customer default rates.</p>
+<hr>
+</section>
+<section id="s2-target-distribution" class="level2">
+<h2 class="anchored" data-anchor-id="s2-target-distribution">S2 — Target distribution</h2>
+<p><strong>What I found:</strong> 24,825 of 307,511 applications had payment trouble. That’s 8.07%.</p>
+<p><strong>Why it matters:</strong> If you guess “no trouble” for everyone, you’re right 91.93% of the time — and you approve every single person who defaults. High accuracy, zero value.</p>
+<p><strong>Write something like:</strong> &gt; Only 8.07% of applicants had payment trouble. That means a model that approved everyone would be &gt; 91.93% accurate and would still approve every borrower who defaults. Accuracy is the wrong way to &gt; judge this problem. That is why my business problem statement measures success as a trade-off between &gt; how many people we approve and how many of them run into trouble.</p>
+<hr>
+</section>
+<section id="s3-traintest-consistency" class="level2">
+<h2 class="anchored" data-anchor-id="s3-traintest-consistency">S3 — Train/test consistency</h2>
+<p><strong>What I found:</strong> Test has the same columns as train except <code>TARGET</code>. Three categories appear only in train: <code>XNA</code> gender (4 rows), <code>Unknown</code> family status (2), <code>Maternity leave</code> (5). Eleven <code>FLAG_DOCUMENT_*</code> columns have the same value for every test applicant.</p>
+<p><strong>Why it matters:</strong> A category the model never saw in training will break it at scoring time. A column that never changes can’t separate anybody.</p>
+<p><strong>Write something like:</strong> &gt; The two files line up well. The only column missing from test is <code>TARGET</code>, which is expected. But &gt; three categories show up in training and never in test, so I need to handle them or the model will &gt; hit a value it has never seen when it scores a real applicant. Eleven of the document flag columns &gt; have the same value for every test applicant, which means they cannot tell anyone apart in the &gt; population I actually have to score.</p>
+<hr>
+</section>
+<section id="s4-impossible-values" class="level2">
+<h2 class="anchored" data-anchor-id="s4-impossible-values">S4 — Impossible values</h2>
+<p><strong>What I found:</strong> <code>DAYS_EMPLOYED = 365243</code> in 55,374 training rows — 18% of the data. That’s about 1,000 years. Also: 4 rows with <code>XNA</code> gender, 1 test row with an impossible region rating of −1, income up to 117 million, social-circle counts up to 348.</p>
+<p><strong>Why it matters:</strong> 365243 isn’t a measurement, it’s a placeholder meaning “no job record.” Left alone it poisons every average. Deleted, you lose 18% of your data — and specifically the retirees, who default <em>less</em>.</p>
+<p><strong>Write something like:</strong> &gt; My biggest data problem is <code>DAYS_EMPLOYED</code>. In 55,374 rows, about 18% of the data, it equals 365243, &gt; which is roughly 1,000 years. That is not a real number. It is a placeholder for applicants with no &gt; employment record. I replaced it with a missing value and added a flag column, so I lose the fake &gt; number but keep the useful fact that the person is not employed. I did not delete these rows. They &gt; are 18% of my data and they behave differently from everyone else, so dropping them would change the &gt; population I am studying. I did remove the 4 rows with an <code>XNA</code> gender, since 4 out of 307,511 &gt; cannot affect anything. But I repaired the one test row with an impossible region rating instead of &gt; deleting it, because every test applicant has to get a prediction.</p>
+<hr>
+</section>
+<section id="s5-temporal-direction" class="level2">
+<h2 class="anchored" data-anchor-id="s5-temporal-direction">S5 — Temporal direction</h2>
+<p><strong>What I found:</strong> After fixing the sentinel, every <code>DAYS_*</code> column is negative. The three <code>EXT_SOURCE</code> columns have no documentation at all.</p>
+<p><strong>Why it matters:</strong> Negative means “before the application,” so nothing here leaks information from after the loan was made. Except we can’t check that for <code>EXT_SOURCE</code>.</p>
+<p><strong>Write something like:</strong> &gt; After fixing <code>DAYS_EMPLOYED</code>, every date column is negative, which matches the dictionary. Negative &gt; means the event happened before the application, so nothing in this table describes what happened &gt; after the loan was approved. The exception is the three <code>EXT_SOURCE</code> columns. The dictionary only &gt; says they are normalized scores from an outside source. I do not know who built them, what goes into &gt; them, or when they were measured, so I cannot confirm they were known at application time.</p>
+<hr>
+</section>
+<section id="s6-missingness" class="level2">
+<h2 class="anchored" data-anchor-id="s6-missingness">S6 — Missingness</h2>
+<p><strong>What I found:</strong> Applicants missing <code>HOUSETYPE_MODE</code> default at 9.15%. Applicants who have it default at 6.99%. The building columns are all missing on the <em>same</em> rows, about 68–70% of them.</p>
+<p><strong>Why it matters:</strong> The missingness itself predicts. Fill those blanks with an average and you delete the signal.</p>
+<p><strong>Write something like:</strong> &gt; Missing values here are not random. Applicants missing <code>HOUSETYPE_MODE</code> default at 9.15%, while &gt; applicants who have it default at 6.99%. The fact that a value is missing tells me something on its &gt; own. The building columns are also all missing on the same rows, which suggests one property data &gt; source that only covers some applicants. If I filled these in with an average I would erase that &gt; signal, so I would add a flag marking the value as missing instead. It also means these columns fail &gt; the availability test in my business problem statement, since they are empty for about 70% of &gt; applicants.</p>
+<hr>
+</section>
+<section id="q2b-redundancy" class="level2">
+<h2 class="anchored" data-anchor-id="q2b-redundancy">Q2b — Redundancy</h2>
+<p><strong>What I found:</strong> 71 pairs of numeric columns correlate above 0.90. They collapse into 15 groups, cutting 121 columns down to 85 usable ones. The biggest group has ten members.</p>
+<p><strong>Why it matters:</strong> You don’t have 122 pieces of evidence. You have about 85.</p>
+<p><strong>Write something like:</strong> &gt; The 122 columns describe far fewer than 122 different things. Seventy-one pairs of numeric columns &gt; correlate above 0.90 and collapse into 15 groups. The largest group has ten members, all versions of &gt; the same building measurements ending in <code>_AVG</code>, <code>_MODE</code> and <code>_MEDI</code>. This matters for two reasons. A &gt; simple logistic model produces unstable coefficients when I feed it three copies of the same &gt; measurement. And if I listed ten correlated building columns as ten separate risk factors, I would be &gt; overstating how much independent evidence I actually have.</p>
+<hr>
+</section>
+<section id="q1-single-variable-separation" class="level2">
+<h2 class="anchored" data-anchor-id="q1-single-variable-separation">Q1 — Single-variable separation</h2>
+<p><strong>What I found:</strong> Nothing passed. Best is <code>EXT_SOURCE_2</code> at AUC 0.654. Best one you can actually explain is <code>DAYS_BIRTH</code> at 0.585. Your bar was 0.70.</p>
+<p><strong>Why it matters:</strong> This is the main conclusion of the whole notebook. No single fact about an applicant is enough.</p>
+<p><strong>Write something like:</strong> &gt; Before running this I set the bar for a variable standing on its own: an AUC of at least 0.70, plus a &gt; riskiest-tenth to safest-tenth default ratio of at least 2.0. Nothing passed. AUC is the chance that &gt; if I pick one applicant who defaulted and one who did not, the variable ranks the defaulter as &gt; riskier — 0.5 would be a coin flip. My strongest variable, <code>EXT_SOURCE_2</code>, reached 0.654. The &gt; strongest one I can actually explain, <code>DAYS_BIRTH</code>, reached 0.585. I predicted this before I ran the &gt; analysis and the result matched. This is the most important thing I learned: no single fact about an &gt; applicant is enough to make a decision, so my recommendation has to be a model that combines several &gt; weak signals rather than a rule based on one column.</p>
+<p><strong>The surprise, in plain terms:</strong> all three <code>EXT_SOURCE</code> columns passed your decile test easily — the riskiest tenth defaults about six times as often as the safest tenth — but failed on AUC. That looks contradictory and isn’t. The decile ratio only compares the two extremes. AUC checks how well the variable orders <em>everybody</em>. So these scores spot the very safest and very riskiest applicants well, and can’t rank the big middle group.</p>
+<blockquote class="blockquote">
+<p>One result surprised me. All three <code>EXT_SOURCE</code> columns passed my decile test easily, with the riskiest tenth defaulting about six times as often as the safest tenth, but they still failed on AUC. The two measures disagree because they look at different things. The decile ratio only compares the extremes, while AUC checks how well the variable ranks everyone. So these scores are good at spotting the very safest and very riskiest applicants, and poor at ordering the large middle group. That makes them useful for sending borderline cases to manual review, but not good enough to score everyone.</p>
+</blockquote>
+<hr>
+</section>
+<section id="q1b-money-variables" class="level2">
+<h2 class="anchored" data-anchor-id="q1b-money-variables">Q1b — Money variables</h2>
+<p><strong>What I found:</strong> You predicted default would rise with both annuity-to-income and credit-to-income. Annuity-to-income did (rank correlation 0.87). Credit-to-income didn’t — it came out flat (−0.04). Income falls from 8.19% default in the lowest tenth to 6.14% in the highest. Bigger loans default <em>less</em>.</p>
+<p><strong>Why it matters:</strong> The prediction you got wrong is the most interesting thing in this section.</p>
+<p><strong>Write something like:</strong> &gt; I wrote down what I expected before I looked. I expected default to rise as both annuity-to-income &gt; and credit-to-income went up. Annuity-to-income did exactly that, with a rank correlation of 0.87. &gt; Credit-to-income did not — it came out flat at −0.04. I think this means the monthly payment compared &gt; to income is what predicts trouble, not the total size of the loan compared to income. A large loan &gt; spread over a long term has a small monthly payment, so grouping loans by total size hides the burden &gt; that actually causes missed payments. I would carry the annuity measure into the modeling stage and &gt; drop credit-to-income. &gt; &gt; Income itself behaves as I expected but weakly, falling from 8.19% default in the lowest tenth to &gt; 6.14% in the highest. Loan amount runs the opposite way, with larger loans defaulting less. I do not &gt; read that as large loans being safer. It more likely reflects who qualifies for a large loan in the &gt; first place. Everyone in this data was already approved, so these are patterns inside an approved &gt; population, not causes.</p>
+<hr>
+</section>
+<section id="q2c-the-three-way-screen" class="level2">
+<h2 class="anchored" data-anchor-id="q2c-the-three-way-screen">Q2c — The three-way screen</h2>
+<blockquote class="blockquote">
+<p><strong>Numbers below are predicted, not confirmed.</strong> The cell hasn’t been re-run since the threshold fix. Check each figure against your own output before you write anything.</p>
+</blockquote>
+<p><strong>What I found:</strong> With “meaningful signal” now defined as AUC ≥ 0.55, four variables should pass — <code>DAYS_BIRTH</code>, <code>DAYS_EMPLOYED</code>, <code>ORGANIZATION_TYPE</code>, <code>NAME_INCOME_TYPE</code>. All three <code>EXT_SOURCE</code> columns fail on verifiability despite being the strongest predictors in the dataset. Two variables just miss: <code>OCCUPATION_TYPE</code> on coverage (68.7%), <code>NAME_EDUCATION_TYPE</code> on AUC (0.546).</p>
+<p><strong>Why it matters:</strong> This is the shortlist your whole business problem statement was pointing at — and the things it excludes cost you something you can put a number on: 0.654 versus 0.585.</p>
+<p><strong>Write something like:</strong> &gt; Putting all three tests together, four variables pass: <code>DAYS_BIRTH</code>, <code>DAYS_EMPLOYED</code>, &gt; <code>ORGANIZATION_TYPE</code> and <code>NAME_INCOME_TYPE</code>. Each is something an underwriter can check against a &gt; document, each is present for at least 80% of applicants, and each separates the two groups by a &gt; clear margin. None of them is strong on its own. The best reaches an AUC of 0.585. &gt; &gt; What failed is the more interesting half. All three <code>EXT_SOURCE</code> columns failed, and they are the &gt; strongest predictors in this data. They did not fail on performance. They failed because I cannot say &gt; where they come from, <code>EXT_SOURCE_1</code> is present for only 43.6% of applicants, and I could not give a &gt; declined applicant a real reason if that reason is a score nobody can explain. I can measure what the &gt; exclusion costs: <code>EXT_SOURCE_2</code> reaches 0.654 and my best passing variable reaches 0.585. That gap is &gt; what Home Credit gives up by restricting itself to predictors it can defend. &gt; &gt; Two variables came close and I left them in Review rather than moving the line to admit them. &gt; <code>OCCUPATION_TYPE</code> has enough signal but is missing for 31% of applicants. <code>NAME_EDUCATION_TYPE</code> has &gt; full coverage but an AUC of 0.546, just under my threshold. Education is worth a note, because its &gt; segment spread is large — 10.93% default at lower secondary against 5.36% for higher education — &gt; while its AUC stays low. The reason is that the high-risk category is only 1.2% of applicants, so a &gt; big gap affecting very few people does not help me rank the population. &gt; &gt; I should be clear about where the 0.55 threshold came from. I set it after seeing the results, not &gt; before, so it is a judgment call rather than a pre-registered rule. I chose a round number clear of &gt; the noise floor and well below the 0.70 bar I had set for a variable standing on its own. It is also &gt; worth saying that the confidence intervals here are only about ±0.008 wide, because the sample has &gt; over 300,000 rows. At that size almost any small relationship is statistically significant, so &gt; significance is not a useful filter here. What I am judging is the size of the effect, and 0.55 is my &gt; judgment about size.</p>
+<p><strong>If your output differs from the four names above,</strong> don’t rewrite the numbers to match mine — tell me what you got and we’ll work out why.</p>
+<hr>
+</section>
+<section id="q3-segments" class="level2">
+<h2 class="anchored" data-anchor-id="q3-segments">Q3 — Segments</h2>
+<p><strong>What I found:</strong> Renters default at 12.31%, people living with parents at 11.70%, people in their own home at 7.80%. Worst-rated regions 11.40% versus 4.84% in the best. Education runs 10.93% down to 5.36%. Five segments crossed your 1.25× line, none hit 2.0×. <strong>No predictor reversed direction anywhere.</strong></p>
+<p><strong>Why it matters:</strong> The reversal check is the real result. Nothing flipped, so your predictors are stable across groups.</p>
+<p><strong>Write something like:</strong> &gt; Default rates differ a lot by segment. People renting default at 12.31% and people living with &gt; parents at 11.70%, against 7.80% for people in their own home. The lowest-rated regions default at &gt; 11.40% and the highest-rated at 4.84%. Education runs from 10.93% at lower secondary down to 5.36% &gt; for higher education. Five segments crossed the 1.25 times line I set in advance, but none reached &gt; 2.0. &gt; &gt; The more useful result is that nothing reversed direction. <code>EXT_SOURCE_2</code>, <code>EXT_SOURCE_3</code> and &gt; <code>DAYS_BIRTH</code> point the same way in every segment I checked. I treated a reversal as the serious &gt; problem, because a variable that means “riskier” for one group and “safer” for another cannot be used &gt; under a single rule. That did not happen anywhere. This is evidence that these relationships are &gt; stable inside this market, which is the closest I can get to my BPS’s concern about whether they &gt; would transfer to a new market. It is not the same as testing a new market. &gt; &gt; One segment shows why I set a minimum group size. <code>NAME_INCOME_TYPE = Other</code> has the highest default &gt; rate in the table at 18.18%, but only 55 applicants, and its confidence interval runs from 10.2% to &gt; 30.3%. I left it unflagged because 55 people cannot support a conclusion.</p>
+<p><strong>[YOUR CALL]</strong> <code>CODE_GENDER</code> crossed your threshold (men 10.14%, women 7.00%). Sex is a protected characteristic under U.S. lending law and cannot be used in underwriting. Say in one sentence whether you’re reporting it as a fairness check or excluding it. Leaving it in a risk-factor table without comment is what a reviewer will catch.</p>
+<hr>
+</section>
+<section id="results-section" class="level2">
+<h2 class="anchored" data-anchor-id="results-section">Results section</h2>
+<p>Your closing section needs three things. You have all of them:</p>
+<p><strong>Data problems I found</strong> — the 1,000-year employment code in 18% of rows; a block of building columns missing for about 70% of applicants, where the missingness itself predicts default; eleven document flags that never vary in the test set; three categories that exist only in training; one impossible region rating in test.</p>
+<p><strong>What turned out to be strongly related</strong> — nothing, on its own. Best single variable reached 0.654 against a 0.70 bar. You predicted that in advance and it held.</p>
+<p><strong>How EDA changed your approach</strong> — <strong>[YOUR CALL]</strong>, pick the one you actually believe:</p>
+<ol type="1">
+<li>No single predictor works, so the transparent baseline has to be a multivariable model, not a one-column rule.</li>
+<li>The verifiability screen removes your three strongest predictors, so the real question becomes how much performance responsible lending costs — a different and better question than maximizing AUC.</li>
+<li>The annuity result redirects feature engineering toward payment burden and away from loan size.</li>
+</ol>
+<p>Option 3 is the narrowest and best-evidenced. Option 2 is the one that makes your project different from a Kaggle notebook.</p>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

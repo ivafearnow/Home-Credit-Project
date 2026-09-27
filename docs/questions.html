@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>questions</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="questions_files/libs/clipboard/clipboard.min.js"></script>
+<script src="questions_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="questions_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="questions_files/libs/quarto-html/popper.min.js"></script>
+<script src="questions_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="questions_files/libs/quarto-html/anchor.min.js"></script>
+<link href="questions_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="questions_files/libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="questions_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="questions_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="questions_files/libs/bootstrap/bootstrap-917079515d91bccb85b543faf8aa8bb6.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+
+
+
+<section id="eda-question-list-home-credit-default-risk" class="level1">
+<h1>EDA Question List — Home Credit Default Risk</h1>
+<section id="decisions-i-need-to-make-before-this-list-is-final" class="level2">
+<h2 class="anchored" data-anchor-id="decisions-i-need-to-make-before-this-list-is-final">0. Decisions I need to make before this list is final</h2>
+<ul class="task-list">
+<li><label><input type="checkbox"><strong>Seven is probably too many.</strong> Which three matter most for the recommendation my BPS promises? The rest can become subsections rather than headline questions.</label></li>
+<li><label><input type="checkbox"><strong>Q3 and Q5 overlap.</strong> Both narrow 122 columns to a shortlist. Merge, or keep the screen (Q3) separate from the redundancy check (Q5)?</label></li>
+<li><label><input type="checkbox"><strong>Q7 uses a hand-built composite score, not a model.</strong> Is a preview of the threshold curve worth including in EDA, or does it belong in the modeling stage? It is the question closest to my BPS’s success metric and the one most likely to overreach.</label></li>
+<li><label><input type="checkbox"><strong>Scope confirmation.</strong> This list assumes <code>application_{train,test}.csv</code> only, per the assignment. Confirm the supplementary tables stay out.</label></li>
+<li><label><input type="checkbox">Rewrite each kept question in my own words.</label></li>
+</ul>
+<hr>
+</section>
+<section id="coverage-note-for-chat-3" class="level2">
+<h2 class="anchored" data-anchor-id="coverage-note-for-chat-3">Coverage note for Chat 3</h2>
+<p>The six standing checks already cover target distribution, missingness levels, impossible values, keys/duplicates/grain, temporal direction, and train/test consistency. The questions below should <strong>not</strong> re-ask those. Where a question builds on a standing-check result, it says so.</p>
+<hr>
+</section>
+<section id="q1.-how-strongly-does-any-single-applicant-characteristic-separate-borrowers-who-struggle-to-repay-from-those-who-do-not-and-is-any-one-of-them-strong-enough-to-stand-alone" class="level2">
+<h2 class="anchored" data-anchor-id="q1.-how-strongly-does-any-single-applicant-characteristic-separate-borrowers-who-struggle-to-repay-from-those-who-do-not-and-is-any-one-of-them-strong-enough-to-stand-alone">Q1. How strongly does any single applicant characteristic separate borrowers who struggle to repay from those who do not — and is any one of them strong enough to stand alone?</h2>
+<p><strong>Traces to:</strong> “identify borrower characteristics that consistently indicate repayment difficulty” and “compare a transparent baseline with predictive alternatives.”</p>
+<p><strong>Why this is first:</strong> everything downstream depends on knowing whether this problem has a few strong signals or many weak ones. It also determines what “transparent baseline” means in practice — if one variable carries most of the separation, that variable <em>is</em> the baseline, and the modeling stage has to beat it rather than beat coin-flipping.</p>
+<p><strong>Method:</strong> default rate by decile for every numeric column; ratio of worst-decile to best-decile default rate as a separation measure. Point-biserial correlation as a secondary sort, not the headline — an 8% base rate keeps all correlations small and the number understates real separation.</p>
+<p><strong>Output:</strong> a ranked table of the top ~15 variables with their decile spread, and decile plots for the top 3.</p>
+<p><strong>Decision it forces:</strong> which variables go forward, and whether the answer to my BPS is “a few strong predictors” or “many weak ones that only work in combination.” These imply different recommendations.</p>
+<hr>
+</section>
+<section id="q2.-is-missingness-a-defect-to-be-repaired-or-a-signal-in-its-own-right" class="level2">
+<h2 class="anchored" data-anchor-id="q2.-is-missingness-a-defect-to-be-repaired-or-a-signal-in-its-own-right">Q2. Is missingness a defect to be repaired, or a signal in its own right?</h2>
+<p><strong>Traces to:</strong> “variables will be assessed for predictive value, availability, and ease of verification.” Builds on standing check 2.</p>
+<p><strong>Why here:</strong> this has to resolve before Q3, because a column that is 56% missing but whose <em>missingness</em> predicts default is a different kind of asset than one that is simply incomplete — and it gets screened differently.</p>
+<p><strong>Method:</strong> for each column above ~20% missing, compare default rate for missing vs.&nbsp;present. Then check whether missingness clusters — are the building-characteristic columns missing on the same rows?</p>
+<p><strong>Output:</strong> a table of missing-vs-present default rates, and a co-missingness heatmap for the high-null block.</p>
+<p><strong>Decision it forces:</strong> impute, add a missing-indicator, or drop — per column, with a stated reason. Goes in <code>decisions.md</code>.</p>
+<p><strong>What I expect and should be suspicious of:</strong> the <code>EXT_SOURCE_1</code> gap looked small in the standing checks (8.52% missing vs 7.50% present). Small differences on 307K rows are statistically significant and practically negligible. I need to say which one this is rather than reporting the p-value.</p>
+<hr>
+</section>
+<section id="q3.-which-predictors-survive-a-screen-on-all-three-of-predictive-value-availability-and-verifiability-not-just-the-first" class="level2">
+<h2 class="anchored" data-anchor-id="q3.-which-predictors-survive-a-screen-on-all-three-of-predictive-value-availability-and-verifiability-not-just-the-first">Q3. Which predictors survive a screen on all three of predictive value, availability, and verifiability — not just the first?</h2>
+<p><strong>Traces to:</strong> directly to my BPS’s “focused set of reliable, readily available variables” and to the deliverable being “an executive recommendation on risk factors… not simply the highest-scoring model.”</p>
+<p><strong>Why this is the question that most distinguishes my project:</strong> a pure Kaggle approach optimizes predictive value alone. My BPS commits to two additional criteria, which means a strong predictor can still fail. The obvious tension: the <code>EXT_SOURCE</code> variables look like the strongest signals, but they are opaque third-party scores — an underwriter cannot verify one, and an applicant cannot be told why theirs is low. <code>EXT_SOURCE_1</code> is also over half missing.</p>
+<p><strong>Method:</strong> classify each candidate from Q1 on three axes — separation strength (Q1), completeness (standing check 2), and verification burden (self-reported / document-backed / externally sourced, assigned by me from the data dictionary). Present as a table or a quadrant plot.</p>
+<p><strong>Output:</strong> a shortlist of variables that pass all three, and an explicit list of strong predictors I am setting aside <em>because</em> of availability or verifiability.</p>
+<p><strong>Decision it forces:</strong> the second list is the more interesting one and should be defended in the results section. This is where EDA shapes the recommendation rather than just describing data.</p>
+<hr>
+</section>
+<section id="q4.-do-the-money-variables-behave-the-way-an-underwriter-would-expect" class="level2">
+<h2 class="anchored" data-anchor-id="q4.-do-the-money-variables-behave-the-way-an-underwriter-would-expect">Q4. Do the money variables behave the way an underwriter would expect?</h2>
+<p><strong>Traces to:</strong> “borrower characteristics that consistently indicate repayment difficulty”; also the “what would an underwriter refuse to believe?” test.</p>
+<p><strong>Why:</strong> income, credit amount, annuity, and goods price are the variables a credit committee will ask about first, regardless of what the correlation table says. If higher income does not monotonically reduce default risk, that is a finding worth the space. Ratios may also carry more signal than levels — credit-to-income and annuity-to-income are what an underwriter actually reasons about, and neither exists as a column yet.</p>
+<p><strong>Method:</strong> default rate by income decile, credit decile, and by two derived ratios (<code>AMT_CREDIT / AMT_INCOME_TOTAL</code>, <code>AMT_ANNUITY / AMT_INCOME_TOTAL</code>). Handle the 117M income outlier identified in standing check 3 before plotting — state the treatment rather than silently winsorizing.</p>
+<p><strong>Output:</strong> four decile plots plus a short table comparing the separation of the raw variables against the derived ratios.</p>
+<p><strong>Decision it forces:</strong> whether to engineer the ratio features for the modeling stage, and how to treat the income outliers.</p>
+<hr>
+</section>
+<section id="q5.-how-much-of-the-122-columns-is-actually-redundant" class="level2">
+<h2 class="anchored" data-anchor-id="q5.-how-much-of-the-122-columns-is-actually-redundant">Q5. How much of the 122 columns is actually redundant?</h2>
+<p><strong>Traces to:</strong> “a focused set” — I cannot recommend a focused set without knowing what is duplicative.</p>
+<p><strong>Why:</strong> the building-characteristic block appears three times over (<code>_AVG</code>, <code>_MODE</code>, <code>_MEDI</code>), and <code>AMT_CREDIT</code> and <code>AMT_GOODS_PRICE</code> are near-identical by construction. If 122 columns are really ~40 distinct constructs, the recommendation gets much simpler and the multicollinearity risk for a transparent (logistic) baseline gets much smaller.</p>
+<p><strong>Method:</strong> correlation matrix on numeric columns, clustered; report groups above |r| &gt; 0.9 and one representative per group.</p>
+<p><strong>Output:</strong> a clustered correlation heatmap and a table of redundancy groups with a chosen representative for each.</p>
+<p><strong>Decision it forces:</strong> which representative to keep per group, and whether the count of genuinely independent constructs changes how I frame the recommendation.</p>
+<hr>
+</section>
+<section id="q6.-does-the-repayment-difficulty-rate-vary-enough-across-major-customer-segments-to-threaten-the-stability-my-bps-promises" class="level2">
+<h2 class="anchored" data-anchor-id="q6.-does-the-repayment-difficulty-rate-vary-enough-across-major-customer-segments-to-threaten-the-stability-my-bps-promises">Q6. Does the repayment-difficulty rate vary enough across major customer segments to threaten the stability my BPS promises?</h2>
+<p><strong>Traces to:</strong> “results must also be checked for stability across major customer segments,” and to the broader cross-market concern — that predictors validated on one population may not transfer.</p>
+<p><strong>Why:</strong> this is the only question that speaks to my BPS’s central worry. I cannot test cross-market transfer with a single-market dataset, but within-dataset heterogeneity is the best available proxy: if the default rate already swings widely across education level or income type <em>inside</em> one population, that is evidence for the caution my BPS recommends, not against it.</p>
+<p><strong>Method:</strong> default rate with confidence intervals by <code>CODE_GENDER</code>, <code>NAME_EDUCATION_TYPE</code>, <code>NAME_INCOME_TYPE</code>, <code>NAME_FAMILY_STATUS</code>, <code>NAME_HOUSING_TYPE</code>, <code>REGION_RATING_CLIENT</code>, and <code>OCCUPATION_TYPE</code>. Report segment sizes alongside rates — a 40% default rate on 180 rows is not a finding.</p>
+<p><strong>Output:</strong> ordered bar charts with counts annotated, and a table of the widest-spread segments.</p>
+<p><strong>Decision it forces:</strong> which segments the modeling stage must report performance separately for. Also flags any segment where using the variable at all raises a fair-lending concern — worth naming, since my BPS mentions responsible-lending oversight.</p>
+<hr>
+</section>
+<section id="q7.-what-does-the-distribution-of-the-strongest-predictors-imply-about-where-a-decision-threshold-could-plausibly-sit-candidate-for-cutting" class="level2">
+<h2 class="anchored" data-anchor-id="q7.-what-does-the-distribution-of-the-strongest-predictors-imply-about-where-a-decision-threshold-could-plausibly-sit-candidate-for-cutting">Q7. What does the distribution of the strongest predictors imply about where a decision threshold could plausibly sit? <em>(candidate for cutting)</em></h2>
+<p><strong>Traces to:</strong> the success metric — “at least a 5% relative reduction in the repayment-difficulty rate at the same simulated approval rate.”</p>
+<p><strong>Why I am tempted:</strong> it shows the shape of the approval/difficulty trade-off before any model exists, which makes the modeling stage’s target concrete instead of abstract.</p>
+<p><strong>Why I might cut it:</strong> it requires inventing a composite score (e.g., the mean of the three <code>EXT_SOURCE</code> columns), and a hand-built composite is a model — a bad one, fit on the same data I would evaluate it on. That is arguably out of scope for EDA and gives a falsely optimistic curve.</p>
+<p><strong>Method if kept:</strong> rank applicants by the composite, then plot cumulative approval rate against realized default rate among the approved. Label it clearly as illustrative, not a result.</p>
+<p><strong>Decision:</strong> keep as an explicitly-labeled illustration, or defer to the modeling stage. Leaning toward deferring, and instead closing the notebook by stating what the threshold analysis will need.</p>
+<hr>
+</section>
+<section id="flagged-questions-this-data-cannot-answer" class="level2">
+<h2 class="anchored" data-anchor-id="flagged-questions-this-data-cannot-answer">Flagged: questions this data cannot answer</h2>
+<p>Listing these so Chat 3 does not propose methods for them, and so the results section can say what is out of reach rather than leaving it implied.</p>
+<p><strong>F1. How much revenue was lost by declining applicants who would have repaid?</strong> Not answerable. Outcomes for declined applicants are unobserved — there are no rows for people who were never approved. My BPS already concedes this and calls approval rates “simulated threshold scenarios.” Worth restating in the notebook, because it is the most common misreading of this kind of analysis.</p>
+<p><strong>F2. Do these predictors hold in a different market?</strong> Not answerable with a single-market dataset. Q6 gives the closest available evidence. Any conclusion here stays a caution, not a finding.</p>
+<p><strong>F3. Does any characteristic <em>cause</em> repayment difficulty?</strong> Out of scope by my BPS’s own boundary statement. Relevant because decile plots invite causal language, and I should watch my own wording in the interpretive cells.</p>
+<hr>
+</section>
+<section id="description-not-questions-do-not-include-as-headline-sections" class="level2">
+<h2 class="anchored" data-anchor-id="description-not-questions-do-not-include-as-headline-sections">Description, not questions — do not include as headline sections</h2>
+<p>Kept here so I do not accidentally promote them later. Each produces a table nobody learns from on its own, though they belong inside other sections as supporting output:</p>
+<ul>
+<li>“What is the distribution of each variable?” — covered by the standing checks.</li>
+<li>“How many categorical vs.&nbsp;numeric columns are there?” — belongs in <code>data_map.md</code>.</li>
+<li>“What are the summary statistics?” — a <code>.describe()</code> dump is not an argument.</li>
+</ul>
+<hr>
+</section>
+<section id="proposed-order-for-chat-3" class="level2">
+<h2 class="anchored" data-anchor-id="proposed-order-for-chat-3">Proposed order for Chat 3</h2>
+<p>Standing checks 1–6 → Q1 → Q2 → Q3 → Q4 → Q5 → Q6 → (Q7 if kept) → flagged limitations.</p>
+<p>Nothing here depends on a later result. Q3 depends on Q1 and Q2; Q7, if kept, depends on Q3.</p>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

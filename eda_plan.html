@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>eda_plan</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="eda_plan_files/libs/clipboard/clipboard.min.js"></script>
+<script src="eda_plan_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="eda_plan_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="eda_plan_files/libs/quarto-html/popper.min.js"></script>
+<script src="eda_plan_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="eda_plan_files/libs/quarto-html/anchor.min.js"></script>
+<link href="eda_plan_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="eda_plan_files/libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="eda_plan_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="eda_plan_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="eda_plan_files/libs/bootstrap/bootstrap-917079515d91bccb85b543faf8aa8bb6.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+
+
+
+<section id="eda-plan-home-credit-default-risk" class="level1">
+<h1>EDA Plan — Home Credit Default Risk</h1>
+<section id="scope-and-execution-status" class="level2">
+<h2 class="anchored" data-anchor-id="scope-and-execution-status">Scope and execution status</h2>
+<p>This is a plan only. No analysis code has been run. The decision rules in this plan were approved in <code>docs/approvals.md</code>; execution remains a separate next stage.</p>
+<p>The EDA will use <code>application_train.csv</code> and <code>application_test.csv</code>. This matches the scope in <code>docs/eda_workflow_guide.md</code>: one row represents one current loan application, <code>application_train</code> supplies the outcome, and <code>application_test</code> is the held-out scoring population. The supplementary history tables are out of scope for this EDA. The column dictionary, <code>data_map.md</code>, and <code>feature_report.md</code> may be used as documentation, not as analytic observations.</p>
+<p><code>TARGET = 1</code> means repayment difficulty and <code>TARGET = 0</code> means no repayment difficulty. IDs will be used only for integrity checks, never as predictors.</p>
+<p>Status labels used below:</p>
+<ul>
+<li><strong>Answerable:</strong> the in-scope data can answer the question as written after its decision rule is specified.</li>
+<li><strong>Partially answerable:</strong> the data support a narrower claim than the wording suggests.</li>
+<li><strong>Cannot answer:</strong> the required observations are absent.</li>
+<li><strong>Description/label:</strong> the item is not itself a question and produces no standalone finding.</li>
+</ul>
+</section>
+<section id="audit-against-the-six-standing-checks" class="level2">
+<h2 class="anchored" data-anchor-id="audit-against-the-six-standing-checks">Audit against the six standing checks</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Standing check</th>
+<th>Covered by the submitted questions?</th>
+<th>Plan decision</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Target distribution</td>
+<td>No</td>
+<td>Add S2 and mark it <code>[added]</code>.</td>
+</tr>
+<tr class="even">
+<td>Missingness, including its relationship to <code>TARGET</code></td>
+<td>Yes, by Q2a</td>
+<td>Reorder it into the standing checks as S6.</td>
+</tr>
+<tr class="odd">
+<td>Impossible values</td>
+<td>No</td>
+<td>Add S4 and mark it <code>[added]</code>.</td>
+</tr>
+<tr class="even">
+<td>Keys, duplicates, and table grain</td>
+<td>No</td>
+<td>Add S1 and mark it <code>[added]</code>.</td>
+</tr>
+<tr class="odd">
+<td>Temporal direction / known at application time</td>
+<td>No</td>
+<td>Add S5 and mark it <code>[added]</code>.</td>
+</tr>
+<tr class="even">
+<td>Train/test consistency in columns and category levels</td>
+<td>No</td>
+<td>Add S3 and mark it <code>[added]</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>The heading <strong>“The Standing Checks”</strong> and its six bullets in <code>docs/questions.md</code> are requirements/descriptions, not questions. Merely listing the checks does not specify what will be tested or what evidence will answer them, so the uncovered checks are converted to questions below.</p>
+</section>
+<section id="ordered-question-plan" class="level2">
+<h2 class="anchored" data-anchor-id="ordered-question-plan">Ordered question plan</h2>
+<p>The order below establishes data grain and comparability before any relationship with the outcome is calculated. Data-quality decisions then precede redundancy, univariate separation, screening, and segment comparisons.</p>
+<section id="s1.-added-is-each-in-scope-table-at-the-expected-one-row-per-current-application-grain-with-a-unique-key-and-no-duplicate-rows" class="level3">
+<h3 class="anchored" data-anchor-id="s1.-added-is-each-in-scope-table-at-the-expected-one-row-per-current-application-grain-with-a-unique-key-and-no-duplicate-rows">S1. <code>[added]</code> Is each in-scope table at the expected one-row-per-current-application grain, with a unique key and no duplicate rows?</h3>
+<ul>
+<li><strong>Status:</strong> Answerable.</li>
+<li><strong>Method:</strong> For train and test, report row and column counts; test <code>SK_ID_CURR</code> for nulls and uniqueness; count fully duplicated rows; check whether train and test ID sets overlap. Confirm that one row is one current application—not necessarily one persistent customer or one originated loan.</li>
+<li><strong>Tables needed:</strong> <code>application_train</code>, <code>application_test</code>.</li>
+<li><strong>Output:</strong> A two-row integrity table with grain, dimensions, null keys, distinct keys, duplicate-key rows, full-row duplicates, and train/test ID overlap; followed by one sentence confirming or rejecting the expected grain.</li>
+<li><strong>Dependency created:</strong> Every later applicant-level rate or comparison relies on this result.</li>
+</ul>
+</section>
+<section id="s2.-added-what-is-the-distribution-of-repayment-difficulty-in-the-training-data" class="level3">
+<h3 class="anchored" data-anchor-id="s2.-added-what-is-the-distribution-of-repayment-difficulty-in-the-training-data">S2. <code>[added]</code> What is the distribution of repayment difficulty in the training data?</h3>
+<ul>
+<li><strong>Status:</strong> Answerable for train; <code>application_test</code> has no observed outcome by design.</li>
+<li><strong>Method:</strong> Count and calculate the proportion of <code>TARGET = 0</code>, <code>TARGET = 1</code>, and missing/invalid target values. State the majority-class accuracy only as an imbalance baseline, not as a useful model.</li>
+<li><strong>Tables needed:</strong> <code>application_train</code> (<code>TARGET</code>).</li>
+<li><strong>Output:</strong> A count/percentage table and a labeled bar chart for the two target classes, plus a short baseline statement.</li>
+<li><strong>Dependency created:</strong> Supplies the base rate against which all later default-rate differences and relative changes are interpreted.</li>
+</ul>
+</section>
+<section id="s3.-added-are-train-and-test-consistent-in-columns-data-types-and-categorical-levels" class="level3">
+<h3 class="anchored" data-anchor-id="s3.-added-are-train-and-test-consistent-in-columns-data-types-and-categorical-levels">S3. <code>[added]</code> Are train and test consistent in columns, data types, and categorical levels?</h3>
+<ul>
+<li><strong>Status:</strong> Answerable for observed schema and levels; it cannot establish whether future production data will remain consistent.</li>
+<li><strong>Method:</strong> Compare column sets after allowing the expected train-only <code>TARGET</code>; compare corresponding data types; for each categorical field, identify levels unique to train or test and their counts/shares; note columns that are entirely missing or constant in either split. Do not use <code>TARGET</code> to “correct” these differences.</li>
+<li><strong>Tables needed:</strong> <code>application_train</code>, <code>application_test</code>.</li>
+<li><strong>Output:</strong> (1) schema-difference table, (2) dtype-mismatch table, and (3) category-level mismatch table with field, level, split, count, and share. A compact summary should distinguish expected from actionable differences.</li>
+<li><strong>Dependency created:</strong> Establishes which variables and encodings can be compared and later deployed.</li>
+</ul>
+</section>
+<section id="s4.-added-which-values-are-impossible-undocumented-sentinels-or-implausible-enough-to-distort-later-results" class="level3">
+<h3 class="anchored" data-anchor-id="s4.-added-which-values-are-impossible-undocumented-sentinels-or-implausible-enough-to-distort-later-results">S4. <code>[added]</code> Which values are impossible, undocumented sentinels, or implausible enough to distort later results?</h3>
+<ul>
+<li><strong>Status:</strong> Partially answerable. Dictionary contradictions and obvious sentinels are testable; “implausible” values require a documented business rule and cannot be declared errors from rarity alone.</li>
+<li><strong>Method:</strong> Apply dictionary domains and sign/range rules; summarize numeric minima, maxima, and extreme quantiles; inspect rare categorical levels; explicitly test known concerns such as <code>DAYS_EMPLOYED = 365243</code>, positive <code>DAYS_*</code> values, <code>CODE_GENDER = 'XNA'</code>, extreme <code>AMT_INCOME_TOTAL</code>, and extreme social-circle counts. Classify each finding as impossible, documented/undocumented sentinel, merely extreme, or unresolved. Apply the approved treatments only in derived DataFrames: set <code>DAYS_EMPLOYED = 365243</code> to <code>NaN</code>, add <code>FLAG_NOT_EMPLOYED</code>, and retain those rows; drop the four <code>CODE_GENDER = 'XNA'</code> rows from train; replace the one test value <code>REGION_RATING_CLIENT_W_CITY = -1</code> with the training mode and never drop test rows; retain raw <code>AMT_INCOME_TOTAL</code> values in analysis tables but cap plots at the training 99.9th percentile with a labeled capped axis; retain social-circle extremes, flag them as suspect, and exclude them from headline claims. Never modify the source CSVs.</li>
+<li><strong>Tables needed:</strong> <code>application_train</code>, <code>application_test</code>, and <code>HomeCredit_columns_description.csv</code> as metadata.</li>
+<li><strong>Output:</strong> An anomaly register with column, rule, offending value/range, train count/share, test count/share, classification, and applied treatment; optional focused plots for high-impact numeric anomalies. The transformation log will state the train-row count before and after the approved <code>XNA</code> removal and confirm unchanged test-row count.</li>
+<li><strong>Dependency created:</strong> Produces the cleaned analysis representation used by all later calculations.</li>
+</ul>
+</section>
+<section id="s5.-added-were-all-proposed-predictors-known-at-the-current-application-decision-time" class="level3">
+<h3 class="anchored" data-anchor-id="s5.-added-were-all-proposed-predictors-known-at-the-current-application-decision-time">S5. <code>[added]</code> Were all proposed predictors known at the current application decision time?</h3>
+<ul>
+<li><strong>Status:</strong> Partially answerable. The dictionary and table design support an application-time interpretation, but the dataset does not contain full source-system timestamps or data-lineage evidence for every field—especially the opaque <code>EXT_SOURCE_*</code> scores.</li>
+<li><strong>Method:</strong> Classify each candidate field as application-time input, pre-application history, outcome, identifier, or timing/provenance unclear. Check the sign convention of relative-time variables after treating sentinels identified in S4. Exclude <code>TARGET</code> and IDs from predictors. Flag any field whose timing cannot be substantiated rather than assuming it is safe.</li>
+<li><strong>Tables needed:</strong> <code>application_train</code>, <code>application_test</code>, and <code>HomeCredit_columns_description.csv</code>; consult the timing limitations in <code>feature_report.md</code>.</li>
+<li><strong>Output:</strong> A feature-timing inventory with field/family, timing class, evidence, leakage risk, and keep/exclude/review decision.</li>
+<li><strong>Dependency created:</strong> Defines the leakage-safe candidate set for subsequent questions.</li>
+</ul>
+</section>
+<section id="s6-q2a.-is-missingness-a-defect-to-repair-or-a-signal-in-itself" class="level3">
+<h3 class="anchored" data-anchor-id="s6-q2a.-is-missingness-a-defect-to-repair-or-a-signal-in-itself">S6 / Q2a. Is missingness a defect to repair, or a signal in itself?</h3>
+<ul>
+<li><strong>Status:</strong> Partially answerable. The data can show whether missingness is associated with <code>TARGET</code>, but cannot reveal why a value is missing or prove that the mechanism will persist in deployment.</li>
+<li><strong>Method:</strong> For every candidate field, calculate missing count/share in train and test and their percentage-point difference. In train, compare the repayment-difficulty rate for missing versus present rows, including group sizes, absolute difference, relative lift, and uncertainty intervals. Treat sentinel values identified in S4 separately from ordinary nulls. A field with more than 60% missing remains in Q2a but is excluded from the Q1 separation ranking. Avoid overinterpreting tiny groups and multiple unadjusted significance tests.</li>
+<li><strong>Tables needed:</strong> <code>application_train</code>, <code>application_test</code>; <code>TARGET</code> is used only for the train association.</li>
+<li><strong>Output:</strong> (1) ranked missingness table, (2) train-versus-test missingness comparison plot, and (3) ranked missing-versus-present target-rate table/plot. The output will recommend “retain as value,” “impute,” “impute plus indicator,” or “exclude/review,” but will not claim a causal missingness mechanism.</li>
+<li><strong>Dependency created:</strong> Supplies the availability component of Q2c and the missing-data treatment needed for later comparisons.</li>
+</ul>
+</section>
+<section id="q2b.-how-much-of-the-122-columns-is-actually-redundant" class="level3">
+<h3 class="anchored" data-anchor-id="q2b.-how-much-of-the-122-columns-is-actually-redundant">Q2b. How much of the 122 columns is actually redundant?</h3>
+<ul>
+<li><strong>Status:</strong> Partially answerable. Statistical redundancy in this sample is measurable; semantic equivalence and redundancy after future feature engineering are not fully determined by pairwise association.</li>
+<li><strong>Method:</strong> Remove IDs and <code>TARGET</code>; use the cleaned candidate representation from S4–S6. Identify exact duplicate/constant columns and group numeric columns connected at absolute Spearman correlation <code>|ρ| ≥ 0.90</code>. Within each group, retain the member with the highest non-missing coverage; break coverage ties in favor of the more interpretable field. Record every group member rather than silently discarding it. Assess categorical association separately with an appropriate measure such as Cramér’s V, but do not apply the numeric <code>ρ</code> threshold to categorical fields. Review known feature families and shared suffixes (<code>_AVG</code>, <code>_MODE</code>, <code>_MEDI</code>) together.</li>
+<li><strong>Tables needed:</strong> <code>application_train</code>; <code>application_test</code> only to check that a proposed representative is usable in both splits.</li>
+<li><strong>Output:</strong> A compact association heatmap, a redundancy-group table listing group members and a proposed representative, and a before/after count of usable feature groups. Large 122-by-122 tables should not be printed in full.</li>
+<li><strong>Dependency created:</strong> Prevents duplicate measurements from dominating the univariate ranking and final screen.</li>
+</ul>
+</section>
+<section id="q1-q1a.-which-individual-applicant-characteristics-separate-borrowers-with-repayment-difficulty-from-those-without-it-and-is-any-one-strong-enough-to-stand-alone" class="level3">
+<h3 class="anchored" data-anchor-id="q1-q1a.-which-individual-applicant-characteristics-separate-borrowers-with-repayment-difficulty-from-those-without-it-and-is-any-one-strong-enough-to-stand-alone">Q1 / Q1a. Which individual applicant characteristics separate borrowers with repayment difficulty from those without it, and is any one strong enough to stand alone?</h3>
+<ul>
+<li><strong>Status:</strong> Partially answerable. The approved stand-alone criterion makes the sample testable, but no single-variable association proves causality, legal usability, or production performance.</li>
+<li><strong>Description flag:</strong> <strong>“1a. Single-variable separation” is a section label, not a question.</strong> It is operationalized by the question above. The Q1 parent is an umbrella question; this item provides its main test.</li>
+<li><strong>Method:</strong> Use only leakage-safe, non-ID candidates from S5 and the treatments from S4–S6; exclude fields with more than 60% missing from this ranking. Use a fixed held-out fold established before comparing variables. For numeric fields, compare distributions by target, target rates across deciles, univariate ROC AUC with direction normalized, and worst-decile-to-best-decile default-rate ratio. For categorical fields, report supported category rates and a held-out univariate encoding/score so high-cardinality variables are not rewarded for overfitting. Any reported bin or category must contain at least 1,000 applicants; smaller categorical levels are pooled into <code>Other</code>, and binning must be reduced if needed to meet the same minimum. Rank effect size alongside coverage and uncertainty, and annotate redundant groups from Q2b. A variable stands alone only if held-out univariate AUC is at least 0.70 <strong>and</strong> its worst-decile default rate is at least 2.0 times its best-decile rate.</li>
+<li><strong>Pre-registered expectation:</strong> No single variable will achieve held-out AUC ≥ 0.70; the <code>EXT_SOURCE_*</code> fields are expected to come closest. Record whether this expectation is supported without changing the thresholds after seeing results.</li>
+<li><strong>Tables needed:</strong> <code>application_train</code>; <code>application_test</code> only for availability and range/level checks, never for target performance.</li>
+<li><strong>Output:</strong> A ranked univariate-results table with variable, type, nonmissing coverage, held-out AUC, worst/best-decile default-rate ratio, stand-alone pass/fail, uncertainty, and redundancy group; followed by small-multiple plots for only the strongest supported variables.</li>
+<li><strong>Dependency created:</strong> Supplies the predictive-value component of Q2c.</li>
+</ul>
+</section>
+<section id="q1b-q4.-do-the-money-variables-behave-the-way-an-underwriter-would-expect" class="level3">
+<h3 class="anchored" data-anchor-id="q1b-q4.-do-the-money-variables-behave-the-way-an-underwriter-would-expect">Q1b / Q4. Do the money variables behave the way an underwriter would expect?</h3>
+<ul>
+<li><strong>Status:</strong> Partially answerable. Observed direction and monotonicity are testable, but underwriting expectations must be stated in advance. Complete affordability cannot be measured because verified expenses, full obligations, the current loan term, and APR are absent.</li>
+<li><strong>Duplicate flag:</strong> Q1b and Q4 are the same question. Analyze them once here and cross-reference the single result; do not create duplicate outputs.</li>
+<li><strong>Method:</strong> Pre-register directional expectations, such as lower difficulty with higher income and higher difficulty with larger payment/income or credit/income burdens. Examine <code>AMT_INCOME_TOTAL</code>, <code>AMT_CREDIT</code>, <code>AMT_ANNUITY</code>, and <code>AMT_GOODS_PRICE</code>, plus carefully defined ratios such as annuity-to-income, credit-to-income, and credit-to-goods-price. Handle zero/missing denominators and S4 anomalies explicitly. Preserve raw income values in every numerical summary and table; cap income at the training 99.9th percentile for plotting only and label the plot axis accordingly. Plot target rate by supported quantile bins of at least 1,000 applicants, report bin counts and uncertainty, and flag non-monotonic or sparse tails. Treat results as associations, not underwriting rules.</li>
+<li><strong>Tables needed:</strong> <code>application_train</code>; corresponding columns in <code>application_test</code> for distribution-shift checks.</li>
+<li><strong>Output:</strong> A definition table for each money measure/ratio and its expected direction; binned count/default-rate tables with confidence intervals; line or point plots of rate by bin; and a concise expectation-versus-observation summary.</li>
+<li><strong>Dependency created:</strong> Adds business-coherence evidence to the three-way screen in Q2c.</li>
+</ul>
+</section>
+<section id="q2-q2c.-which-predictors-survive-all-three-screens-predictive-value-availability-and-verifiability" class="level3">
+<h3 class="anchored" data-anchor-id="q2-q2c.-which-predictors-survive-all-three-screens-predictive-value-availability-and-verifiability">Q2 / Q2c. Which predictors survive all three screens: predictive value, availability, and verifiability?</h3>
+<ul>
+<li><strong>Status:</strong> Partially answerable. Predictive value and observed availability are measurable. <strong>Verifiability cannot be established from these CSVs</strong> because they contain no verification status, source documents, or collection costs. <code>feature_report.md</code> can support only a documented qualitative rating (direct application field, opaque external score, proxy, or unavailable), not proof of operational verifiability.</li>
+<li><strong>Description flag:</strong> <strong>“2c. The three-way screen” is a section label, not a question.</strong> The Q2 parent supplies the question; Q2a and Q2b are prerequisite analyses.</li>
+<li><strong>Method:</strong> Combine Q1 predictive evidence, S6 availability, Q2b redundancy groups, Q1b business coherence, train/test usability from S3, timing from S5, and the approved qualitative rubric grounded in <code>feature_report.md</code>. Assign <strong>Tier A</strong> to document-backed fields (including income, employment, age, education, family status, housing type, contract amounts, and car ownership); <strong>Tier B</strong> to self-reported or structural fields (including contact flags, phone availability, region ratings, and process timing); and <strong>Tier C</strong> to opaque fields (<code>EXT_SOURCE_*</code> and social-circle counts). Assign <strong>Pass</strong> only to Tier A fields with at least 80% coverage and meaningful Q1 signal; <strong>Review</strong> to Tier B fields or Tier A fields with 50–80% coverage; and <strong>Fail</strong> to Tier C fields or any field below 50% coverage. Report the predictive strength of Fail variables, including the expectedly strong opaque fields, so the cost of exclusion remains visible. Keep predictive performance distinct from fairness or legal permissibility; sensitive/proxy fields should be flagged for governance review even if predictive.</li>
+<li><strong>Tables needed:</strong> Results produced by S3–S6, Q2b, Q1, and Q1b; <code>application_train</code>, <code>application_test</code>; <code>feature_report.md</code> for qualitative provenance/verifiability limitations.</li>
+<li><strong>Output:</strong> A feature scorecard with one row per feature group and columns for validation strength, coverage, train/test compatibility, anomaly burden, temporal status, redundancy, verifiability tier (A/B/C), governance flag, and final Pass/Review/Fail disposition; plus a short survivor list with reasons. Fail-tier predictive strength remains visible in the same table.</li>
+<li><strong>Dependency created:</strong> Defines the focused candidate set that a later modeling stage may use.</li>
+</ul>
+</section>
+<section id="q3.-does-the-repayment-difficulty-rate-vary-enough-across-major-customer-segments-to-threaten-the-stability-promised-by-the-bps" class="level3">
+<h3 class="anchored" data-anchor-id="q3.-does-the-repayment-difficulty-rate-vary-enough-across-major-customer-segments-to-threaten-the-stability-promised-by-the-bps">Q3. Does the repayment-difficulty rate vary enough across major customer segments to threaten the stability promised by the BPS?</h3>
+<ul>
+<li><strong>Status:</strong> Partially answerable. This EDA can identify cross-sectional differences in this training sample using the approved materiality rules. It <strong>cannot answer temporal or future-population stability</strong>, because there is no labeled time-based or external validation sample, and test has no <code>TARGET</code>.</li>
+<li><strong>Method:</strong> Predefine major segments and avoid data-driven cherry-picking: <code>CODE_GENDER</code>, <code>NAME_EDUCATION_TYPE</code>, <code>NAME_INCOME_TYPE</code>, <code>REGION_RATING_CLIENT_W_CITY</code>, and <code>NAME_HOUSING_TYPE</code>, subject to S3–S6 data-quality results. Pool levels below 1,000 applicants into <code>Other</code>. For every supported level, report applicant count/share, target count/rate, 95% confidence interval, and absolute and relative difference from the overall rate. <strong>Note</strong> a segment only when <code>n ≥ 1,000</code>, its confidence interval excludes the overall rate, and <code>segment rate / overall rate ≥ 1.25</code> or <code>≤ 0.80</code>. Mark a result as <strong>threatening stability</strong> when those support and confidence conditions hold and the ratio is <code>≥ 2.0</code> or <code>≤ 0.50</code>, or when a predictor’s direction reverses between sufficiently large segments. Treat protected/proxy attributes as audit dimensions, not automatic underwriting inputs.</li>
+<li><strong>Tables needed:</strong> <code>application_train</code>; <code>application_test</code> only for segment-prevalence comparison.</li>
+<li><strong>Output:</strong> Segment profile table; dot/interval plots of target rate by segment; train/test segment-share comparison; and, if sample sizes allow, a predictor-by-segment stability matrix showing direction/effect consistency and uncertainty.</li>
+<li><strong>Decision rule:</strong> The 1.25× note threshold, 2.0× threat threshold, <code>n ≥ 1,000</code> requirement, confidence-interval rule, and direction-reversal rule are pre-registered and must not be changed after viewing results.</li>
+</ul>
+</section>
+</section>
+<section id="items-the-current-wording-cannot-fully-answer" class="level2">
+<h2 class="anchored" data-anchor-id="items-the-current-wording-cannot-fully-answer">Items the current wording cannot fully answer</h2>
+<p>No submitted question is wholly impossible with the in-scope data, but several claims must be narrowed:</p>
+<ul>
+<li>Q1 can apply the approved stand-alone criterion in a held-out fold, but it still cannot establish production performance from EDA alone.</li>
+<li>Q1b/Q4 cannot test complete affordability or reconstruct current-loan pricing because current term, APR, verified expenses, and complete obligations are absent.</li>
+<li>Q2 cannot prove operational verifiability; it can only apply a transparent qualitative rubric from the documentation.</li>
+<li>Q3 cannot establish stability over time or in future populations because no labeled temporal/external sample is available.</li>
+<li>S5 cannot prove the provenance or exact availability timestamp of opaque external scores.</li>
+</ul>
+<p>These limits should remain visible in the notebook so descriptive associations are not presented as causal, operational, or policy conclusions.</p>
+</section>
+<section id="descriptions-and-duplicated-items-in-the-submitted-list" class="level2">
+<h2 class="anchored" data-anchor-id="descriptions-and-duplicated-items-in-the-submitted-list">Descriptions and duplicated items in the submitted list</h2>
+<ul>
+<li><strong>“The Standing Checks”</strong> and its bullets are requirements/descriptions, not analytic questions.</li>
+<li><strong>“1a. Single-variable separation”</strong> is a description/section label; it has been rewritten as an operational question under Q1.</li>
+<li><strong>“2c. The three-way screen”</strong> is a description/section label; it has been tied to the Q2 parent question.</li>
+<li>Q1 and Q2 are umbrella questions. Their subquestions provide the executable analyses and should not be reported as unrelated findings.</li>
+<li>Q1b and Q4 are exact duplicates and should produce one analysis, not two.</li>
+</ul>
+</section>
+<section id="approved-decision-rules" class="level2">
+<h2 class="anchored" data-anchor-id="approved-decision-rules">Approved decision rules</h2>
+<p>The anomaly treatments, redundancy and reporting thresholds, stand-alone definition, verifiability rubric, and segment-stability rules above are approved and pre-registered in <code>docs/approvals.md</code>. They should be implemented exactly as written and reported even when results conflict with the pre-registered expectation. All transformations must occur in derived DataFrames; source CSVs must remain unchanged.</p>
+</section>
+<section id="d1.-approval-threshold-trade-off-deferred-to-modeling" class="level2">
+<h2 class="anchored" data-anchor-id="d1.-approval-threshold-trade-off-deferred-to-modeling">D1. Approval-threshold trade-off — deferred to modeling</h2>
+<p>D1 is <strong>deferred, not omitted</strong>. It asks what the strongest predictors imply for an approval threshold and the resulting approval-rate/repayment-difficulty-rate trade-off. Answering it requires a composite model score evaluated out of sample; fitting and assessing that composite on the same observations during EDA would yield an optimistically biased trade-off curve.</p>
+<p>The modeling stage must answer D1 using out-of-sample scores, a held-out validation split, and a stated cost ratio between a missed default and a declined good applicant. This EDA may identify candidate predictors and describe univariate separation, but it must not present a composite approval threshold as an exploratory result.</p>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
