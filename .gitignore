@@ -29,3 +29,4 @@ models/
 *.pkl
 __pycache__/
 .venv/
+docs/*.csv
