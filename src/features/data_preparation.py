@@ -22,14 +22,38 @@ Split = Literal["train", "test"]
 
 @dataclass(frozen=True)
 class CleaningParameters:
-    """Values learned from the retained training applications only."""
+    """Store cleaning values learned from retained training applications.
+
+    Parameters
+    ----------
+    region_rating_client_w_city_mode : int | float
+        Training-set mode used to repair invalid region-rating values.
+
+    Returns
+    -------
+    None
+        This dataclass only stores fitted values.
+    """
 
     region_rating_client_w_city_mode: int | float
 
 
 @dataclass(frozen=True)
 class FeatureEngineeringParameters:
-    """Train-fitted settings used to create engineered application features."""
+    """Store train-fitted settings for engineered application features.
+
+    Parameters
+    ----------
+    credit_amount_bin_edges : tuple[float, ...]
+        Training-derived boundaries for ``AMT_CREDIT`` bins.
+    missing_indicator_columns : tuple[str, ...]
+        Source fields for which missingness indicators are created.
+
+    Returns
+    -------
+    None
+        This dataclass only stores fitted values.
+    """
 
     credit_amount_bin_edges: tuple[float, ...]
     missing_indicator_columns: tuple[str, ...]
@@ -37,7 +61,22 @@ class FeatureEngineeringParameters:
 
 @dataclass(frozen=True)
 class PreparationArtifacts:
-    """All training-fitted settings required to reproduce preparation."""
+    """Store all artifacts needed to reproduce data preparation.
+
+    Parameters
+    ----------
+    cleaning : CleaningParameters
+        Fitted application-cleaning settings.
+    feature_engineering : FeatureEngineeringParameters
+        Fitted feature-engineering settings.
+    feature_columns : tuple[str, ...]
+        Final ordered predictor schema.
+
+    Returns
+    -------
+    None
+        This dataclass only stores fitted values.
+    """
 
     cleaning: CleaningParameters
     feature_engineering: FeatureEngineeringParameters
@@ -79,15 +118,26 @@ BUREAU_NUMERIC_COLUMNS = (
 def fit_cleaning_parameters(train_df: pd.DataFrame) -> CleaningParameters:
     """Learn cleaning values from raw training data only.
 
+    Parameters
+    ----------
+    train_df : pandas.DataFrame
+        Raw training applications used to learn cleaning values.
+
+    Returns
+    -------
+    CleaningParameters
+        Training-only mode used to repair invalid region-rating values.
+
     The returned parameters must be reused when cleaning validation, test, or
-    newly scored applications.  No test observations contribute to them.
+    newly scored applications. No test observations contribute to them.
     """
     _require_columns(train_df, {"CODE_GENDER", "REGION_RATING_CLIENT_W_CITY"})
 
+    # EDA decision #1: work on a derived frame so fitting never alters the raw CSV.
     fit_frame = train_df.copy()
 
-    # EDA decision #7: CODE_GENDER = XNA is an undocumented training-only level
-    # with four rows -> remove those training rows before fitting cleaning values.
+    # EDA decision #7: exclude the four undocumented XNA training records so
+    # fitted values describe the same eligible training population as the model.
     fit_frame = fit_frame.loc[fit_frame["CODE_GENDER"] != "XNA"]
 
     valid_region_ratings = fit_frame.loc[
@@ -100,8 +150,8 @@ def fit_cleaning_parameters(train_df: pd.DataFrame) -> CleaningParameters:
             "REGION_RATING_CLIENT_W_CITY values in {1, 2, 3}."
         )
 
-    # EDA decision #8: REGION_RATING_CLIENT_W_CITY = -1 is outside the documented
-    # domain -> learn its replacement from the valid retained training rows only.
+    # EDA decision #8: learn the replacement only from valid documented ratings,
+    # preventing the invalid -1 code from affecting the repair value.
     region_mode = valid_region_ratings.mode().iat[0]
     return CleaningParameters(region_rating_client_w_city_mode=region_mode)
 
@@ -116,11 +166,11 @@ def clean_application_data(
 
     Parameters
     ----------
-    df:
+    df : pandas.DataFrame
         Raw application data. It is never modified in place.
-    parameters:
+    parameters : CleaningParameters
         Values returned by :func:`fit_cleaning_parameters` using training data.
-    split:
+    split : Split
         ``"train"`` removes the undocumented ``CODE_GENDER == "XNA"`` records.
         ``"test"`` retains every row because each applicant must be scored.
 
@@ -146,43 +196,32 @@ def clean_application_data(
             "AMT_GOODS_PRICE",
         },
     )
+    # EDA decision #1: make a derived frame so source application data stay unchanged.
     cleaned = df.copy()
 
-    # EDA decision #6: DAYS_EMPLOYED = 365243 marks a pensioner-heavy group ->
-    # add FLAG_NOT_EMPLOYED before replacing the placeholder with missing data.
+    # EDA decision #6: preserve the pensioner-heavy sentinel's signal before its
+    # placeholder value is removed, because dropping these applicants changes scope.
     cleaned["FLAG_NOT_EMPLOYED"] = (
         cleaned["DAYS_EMPLOYED"].eq(365243).astype("int8")
     )
 
-    # EDA decision #5: DAYS_EMPLOYED = 365243 is an undocumented placeholder ->
-    # set it to NA while retaining the application rows.
+    # EDA decision #5: replace the undocumented sentinel with missing data while
+    # retaining applicants, since the value is not a real employment duration.
     cleaned.loc[
         cleaned["DAYS_EMPLOYED"].eq(365243), "DAYS_EMPLOYED"
     ] = pd.NA
 
-    # EDA decision #7: CODE_GENDER = XNA is removed from training only; test rows
-    # are retained because every test applicant must receive a prediction.
+    # EDA decision #7: remove the four undocumented training records but retain
+    # test applicants, because the test population must all receive predictions.
     if split == "train":
         cleaned = cleaned.loc[cleaned["CODE_GENDER"] != "XNA"].copy()
 
-    # EDA decision #8: REGION_RATING_CLIENT_W_CITY = -1 is outside its documented
-    # domain -> replace it with the mode learned from retained training data.
+    # EDA decision #8: repair the out-of-domain -1 code instead of deleting a test
+    # applicant, using the retained-training mode to keep the replacement consistent.
     cleaned.loc[
         cleaned["REGION_RATING_CLIENT_W_CITY"].eq(-1),
         "REGION_RATING_CLIENT_W_CITY",
     ] = parameters.region_rating_client_w_city_mode
-
-    # EDA decision #21: derive affordability and loan-structure ratios.
-    # EDA decision #22: non-positive denominators do not form valid ratios -> NA.
-    cleaned["ANNUITY_TO_INCOME"] = _safe_ratio(
-        cleaned["AMT_ANNUITY"], cleaned["AMT_INCOME_TOTAL"]
-    )
-    cleaned["CREDIT_TO_INCOME"] = _safe_ratio(
-        cleaned["AMT_CREDIT"], cleaned["AMT_INCOME_TOTAL"]
-    )
-    cleaned["CREDIT_TO_GOODS_PRICE"] = _safe_ratio(
-        cleaned["AMT_CREDIT"], cleaned["AMT_GOODS_PRICE"]
-    )
 
     return cleaned
 
@@ -193,6 +232,18 @@ def fit_feature_engineering_parameters(
     credit_amount_bins: int = 5,
 ) -> FeatureEngineeringParameters:
     """Learn feature-engineering settings from cleaned training data only.
+
+    Parameters
+    ----------
+    train_df : pandas.DataFrame
+        Cleaned training applications used to fit feature settings.
+    credit_amount_bins : int, default=5
+        Number of quantile-based credit-amount intervals to create.
+
+    Returns
+    -------
+    FeatureEngineeringParameters
+        Training-only bin boundaries and missingness-indicator schema.
 
     ``train_df`` should be the output of :func:`clean_application_data` with
     ``split="train"``.  In particular, the employment sentinel must already
@@ -206,16 +257,16 @@ def fit_feature_engineering_parameters(
     if credit_amount.empty:
         raise ValueError("Cannot fit credit-amount bins without training values.")
 
-    # EDA decision #23: loan-size risk is non-monotonic -> learn training-only
-    # cut points so a later model can represent its middle-versus-tail pattern.
+    # EDA decision #23: fit training-only bins because loan-size risk is
+    # non-monotonic and a straight-line relationship would miss its shape.
     quantiles = np.linspace(0, 1, credit_amount_bins + 1)
     inner_edges = np.unique(credit_amount.quantile(quantiles).to_numpy())[1:-1]
     if inner_edges.size == 0:
         raise ValueError("Cannot fit credit-amount bins: training values lack variation.")
     bin_edges = tuple(np.concatenate(([-np.inf], inner_edges, [np.inf])).tolist())
 
-    # EDA decision #11: missingness can be predictive, especially for building
-    # fields -> preserve it with indicators for available important columns.
+    # EDA decision #11: retain informative absence, especially for building data,
+    # instead of allowing later imputation to erase the missingness signal.
     indicator_columns = tuple(
         column
         for column in MISSINGNESS_INDICATOR_CANDIDATES
@@ -233,7 +284,19 @@ def engineer_application_features(
 ) -> pd.DataFrame:
     """Add features using train-fitted settings without modifying ``df``.
 
-    Apply this function after :func:`clean_application_data`.  The same
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Cleaned application data to transform; it is not modified in place.
+    parameters : FeatureEngineeringParameters
+        Training-fitted bin boundaries and missingness-indicator schema.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Copy of ``df`` with EDA-supported engineered features appended.
+
+    Apply this function after :func:`clean_application_data`. The same
     ``parameters`` object must be used for train, validation, test, and future
     scoring data.
     """
@@ -248,45 +311,41 @@ def engineer_application_features(
             "AMT_GOODS_PRICE",
         },
     )
+    # EDA decision #1: append features only to a copy so raw application values
+    # remain available for audit and reproducibility.
     engineered = df.copy()
 
-    # DAYS_BIRTH records days before application as a negative number -> AGE_YEARS
-    # is positive applicant age, which can capture life-stage risk differences.
+    # EDA decision #27: express the retained DAYS_BIRTH Pass candidate in years
+    # so its life-stage relationship is interpretable without changing its signal.
     engineered["AGE_YEARS"] = -engineered["DAYS_BIRTH"] / 365.25
 
-    # EDA decision #5: the employment sentinel was already converted to NA ->
-    # EMPLOYMENT_YEARS is positive tenure and may proxy job stability/income security.
+    # EDA decision #5: convert valid negative day counts to positive tenure only
+    # after sentinel repair, so the placeholder cannot masquerade as long employment.
     engineered["EMPLOYMENT_YEARS"] = -engineered["DAYS_EMPLOYED"] / 365.25
 
-    # EDA decision #21: credit relative to income measures requested debt burden;
-    # a higher burden can make repayment more difficult.
+    # EDA decision #21: credit relative to income represents requested debt burden,
+    # which can distinguish applicants with different repayment capacity.
     engineered["CREDIT_TO_INCOME"] = _safe_ratio(
         engineered["AMT_CREDIT"], engineered["AMT_INCOME_TOTAL"]
     )
 
-    # EDA decision #21: annuity relative to income measures periodic payment burden;
-    # less remaining income may increase repayment difficulty.
+    # EDA decision #21: annuity relative to income represents periodic payment
+    # burden, which can reduce the income remaining to absorb repayment shocks.
     engineered["ANNUITY_TO_INCOME"] = _safe_ratio(
         engineered["AMT_ANNUITY"], engineered["AMT_INCOME_TOTAL"]
     )
 
-    # EDA decision #21: annuity relative to credit approximates repayment intensity;
-    # a larger scheduled payment for the same credit can strain a household budget.
-    engineered["ANNUITY_TO_CREDIT"] = _safe_ratio(
-        engineered["AMT_ANNUITY"], engineered["AMT_CREDIT"]
+    # EDA decision #21: credit relative to goods price captures loan structure,
+    # allowing the model to distinguish differently financed purchases.
+    engineered["CREDIT_TO_GOODS_PRICE"] = _safe_ratio(
+        engineered["AMT_CREDIT"], engineered["AMT_GOODS_PRICE"]
     )
 
-    # EDA decision #21: goods price relative to credit describes financing structure;
-    # departures from a typical financed share may identify different risk profiles.
-    engineered["GOODS_TO_CREDIT"] = _safe_ratio(
-        engineered["AMT_GOODS_PRICE"], engineered["AMT_CREDIT"]
-    )
+    # EDA decision #22: _safe_ratio returns NA for non-positive denominators so
+    # financially meaningless ratios are never fabricated.
 
-    # EDA decision #22: all ratios use NA for a non-positive denominator rather
-    # than inventing a financially meaningless value.
-
-    # Interaction: payment burden may have a different effect for applicants with
-    # short versus long employment tenure, a proxy for repayment-buffer stability.
+    # Standard feature: interact payment burden with employment tenure because the
+    # same annuity burden can imply different repayment resilience by job stability.
     engineered["ANNUITY_TO_INCOME_X_EMPLOYMENT_YEARS"] = (
         engineered["ANNUITY_TO_INCOME"] * engineered["EMPLOYMENT_YEARS"]
     )
@@ -296,12 +355,12 @@ def engineer_application_features(
             raise KeyError(
                 f"Application data is missing fitted missingness field: {column}"
             )
-        # EDA decision #11: a missing value can be informative in its own right ->
-        # retain that information as a binary indicator before later imputation.
+        # EDA decision #11: record absence before later imputation because missing
+        # values themselves can be predictive rather than merely incomplete data.
         engineered[f"{column}_MISSING"] = engineered[column].isna().astype("int8")
 
-    # EDA decision #23: AMT_CREDIT has a humped default pattern -> use the stored
-    # training-only quantile boundaries to represent non-linear loan-size effects.
+    # EDA decision #23: represent the humped loan-size pattern with stored
+    # training-only bins rather than imposing an unsupported straight-line effect.
     engineered["AMT_CREDIT_BIN"] = pd.cut(
         engineered["AMT_CREDIT"],
         bins=parameters.credit_amount_bin_edges,
@@ -315,6 +374,16 @@ def engineer_application_features(
 def aggregate_bureau(bureau_df: pd.DataFrame) -> pd.DataFrame:
     """Aggregate bureau history to exactly one row per ``SK_ID_CURR``.
 
+    Parameters
+    ----------
+    bureau_df : pandas.DataFrame
+        Application-date-safe bureau records with one or more rows per applicant.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Applicant-level bureau summaries with one row per ``SK_ID_CURR``.
+
     The function assumes bureau records are available as of each current
     application date. If a future extract contains post-application records,
     filter those records to the application as-of date before calling this
@@ -325,14 +394,14 @@ def aggregate_bureau(bureau_df: pd.DataFrame) -> pd.DataFrame:
         {"SK_ID_CURR", "SK_ID_BUREAU", "CREDIT_ACTIVE", *BUREAU_NUMERIC_COLUMNS},
     )
 
-    # EDA decision #29: bureau history is future work only after an
-    # application-date-safe aggregation -> build applicant-level summaries first.
+    # EDA decision #29: aggregate history to the application grain only after
+    # confirming it is application-date-safe, preventing future-information leakage.
     grouped = bureau_df.groupby("SK_ID_CURR", sort=False)
     bureau_features = grouped.size().rename("BUREAU_RECORD_COUNT").to_frame()
     bureau_features["BUREAU_UNIQUE_CREDIT_COUNT"] = grouped["SK_ID_BUREAU"].nunique()
 
-    # Credit status counts show the composition of prior obligations; more active
-    # obligations may indicate greater repayment burden than closed obligations.
+    # EDA decision #29: summarize prior-credit status at applicant level so history
+    # can be used without multiplying application rows during a later safe stage.
     bureau_features["BUREAU_ACTIVE_CREDIT_COUNT"] = grouped["CREDIT_ACTIVE"].agg(
         lambda values: values.eq("Active").sum()
     )
@@ -340,8 +409,8 @@ def aggregate_bureau(bureau_df: pd.DataFrame) -> pd.DataFrame:
         lambda values: values.eq("Closed").sum()
     )
 
-    # Means describe a typical prior credit, maxima retain the most severe/recent
-    # observed value, and sums capture a customer's total historical exposure.
+    # EDA decision #29: create applicant-level history summaries to preserve the
+    # one-row application grain required before supplementary data are modeled.
     numeric_features = grouped[list(BUREAU_NUMERIC_COLUMNS)].agg(["mean", "max", "sum"])
     numeric_features.columns = [
         f"BUREAU_{column}_{statistic.upper()}"
@@ -357,6 +426,19 @@ def left_join_bureau_features(
     bureau_features: pd.DataFrame,
 ) -> pd.DataFrame:
     """Left-join one-row-per-applicant bureau features onto applications.
+
+    Parameters
+    ----------
+    application_df : pandas.DataFrame
+        One-row-per-applicant application data.
+    bureau_features : pandas.DataFrame
+        One-row-per-applicant bureau summary data.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Application data with bureau features joined; applicants lacking history
+        remain present with missing bureau-derived values.
 
     Applicants without bureau history are retained with missing bureau-derived
     features. Their later imputation and missingness-indicator policy belongs to
@@ -377,8 +459,8 @@ def left_join_bureau_features(
             f"{collisions}"
         )
 
-    # EDA decision #29: aggregate before joining so repeated bureau-credit rows
-    # cannot duplicate application rows or change the one-row-per-application grain.
+    # EDA decision #29: join only aggregated history so repeated credit records
+    # cannot duplicate applicants or violate the application-level study grain.
     return application_df.merge(
         bureau_features,
         how="left",
@@ -419,6 +501,7 @@ def prepare_data(
     if "TARGET" in test_df.columns:
         raise ValueError("Test data must not contain TARGET.")
 
+    # EDA decision #1: prepare copies so no raw input table is modified in place.
     train_work = train_df.copy()
     test_work = test_df.copy()
 
@@ -427,21 +510,26 @@ def prepare_data(
         train_work = left_join_bureau_features(train_work, bureau_features)
         test_work = left_join_bureau_features(test_work, bureau_features)
 
-    # Fit all learned cleaning values from training applications only.
+    # EDA decision #8: fit the invalid-region repair on training data only so test
+    # distribution information cannot influence the transformation.
     cleaning_parameters = fit_cleaning_parameters(train_work)
     cleaned_train = clean_application_data(
         train_work, cleaning_parameters, split="train"
     )
     cleaned_test = clean_application_data(test_work, cleaning_parameters, split="test")
 
-    # Fit bin boundaries and the missingness-indicator schema from cleaned training
-    # applications only, then apply the exact same settings to the test population.
+    # EDA decision #11: fit the missingness-indicator schema on training data so
+    # absence is represented consistently without test-driven feature selection.
+    # EDA decision #23: fit non-linear loan-size boundaries on training data only
+    # and reuse them in test, avoiding test-distribution leakage.
     feature_parameters = fit_feature_engineering_parameters(cleaned_train)
     engineered_train = engineer_application_features(cleaned_train, feature_parameters)
     engineered_test = engineer_application_features(cleaned_test, feature_parameters)
 
-    # TARGET is an outcome, not a predictor -> establish the final schema from
-    # training predictors and require test to contain exactly that same schema.
+    # EDA decision #3: remove TARGET from predictors because it is the outcome,
+    # not information available when scoring a new application.
+    # EDA decision #4: retain SK_ID_CURR for row tracking but do not treat it as a
+    # model signal; feature selection is applied downstream using this schema.
     feature_columns = tuple(
         column for column in engineered_train.columns if column != "TARGET"
     )
@@ -470,7 +558,20 @@ def save_preparation_artifacts(
     artifacts: PreparationArtifacts,
     artifacts_path: str | Path | None = None,
 ) -> Path:
-    """Persist train-fitted preparation settings for reproducible scoring."""
+    """Persist train-fitted preparation settings for reproducible scoring.
+
+    Parameters
+    ----------
+    artifacts : PreparationArtifacts
+        Fitted cleaning, feature-engineering, and schema settings to serialize.
+    artifacts_path : str | pathlib.Path | None, default=None
+        Output pickle path; the project models path is used when omitted.
+
+    Returns
+    -------
+    pathlib.Path
+        Path of the serialized artifact file.
+    """
     path = (
         Path(artifacts_path)
         if artifacts_path is not None
@@ -485,12 +586,38 @@ def save_preparation_artifacts(
 
 
 def _safe_ratio(numerator: pd.Series, denominator: pd.Series) -> pd.Series:
-    """Return a ratio only for positive denominator values."""
+    """Calculate a ratio only where its denominator is positive.
+
+    Parameters
+    ----------
+    numerator : pandas.Series
+        Values to divide.
+    denominator : pandas.Series
+        Divisor values; zero and negative values are invalid.
+
+    Returns
+    -------
+    pandas.Series
+        Elementwise ratio, with missing values for non-positive denominators.
+    """
     return numerator.div(denominator.where(denominator.gt(0)))
 
 
 def _require_columns(df: pd.DataFrame, required: set[str]) -> None:
-    """Raise a clear error when an application frame lacks required fields."""
+    """Validate that a DataFrame contains all required columns.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame whose schema is validated.
+    required : set[str]
+        Column names that must be present.
+
+    Returns
+    -------
+    None
+        Raises ``KeyError`` when one or more required columns are absent.
+    """
     missing = sorted(required.difference(df.columns))
     if missing:
         raise KeyError(f"Application data is missing required columns: {missing}")
@@ -502,14 +629,26 @@ if __name__ == "__main__":
     raw_data_directory = project_root / "data" / "raw"
     raw_train = pd.read_csv(raw_data_directory / "application_train.csv")
     raw_test = pd.read_csv(raw_data_directory / "application_test.csv")
+    # EDA decision #29: include history only through an applicant-level aggregate
+    # so bureau rows cannot change the one-row-per-application population.
+    raw_bureau = pd.read_csv(raw_data_directory / "bureau.csv")
 
-    prepared_train, prepared_test, _ = prepare_data(raw_train, raw_test)
+    prepared_train, prepared_test, _ = prepare_data(
+        raw_train, raw_test, bureau_df=raw_bureau
+    )
     predictor_columns_match = list(
         prepared_train.drop(columns="TARGET").columns
     ) == list(prepared_test.columns)
+    train_id_is_unique = prepared_train["SK_ID_CURR"].is_unique
+    test_id_is_unique = prepared_test["SK_ID_CURR"].is_unique
+
+    processed_data_directory = project_root / "data" / "processed"
+    processed_data_directory.mkdir(parents=True, exist_ok=True)
+    prepared_train.to_csv(processed_data_directory / "train_prepared.csv", index=False)
+    prepared_test.to_csv(processed_data_directory / "test_prepared.csv", index=False)
 
     print(f"Prepared train dimensions: {prepared_train.shape}")
     print(f"Prepared test dimensions:  {prepared_test.shape}")
     print(f"Columns match apart from TARGET: {predictor_columns_match}")
-    print(f"Remaining NAs in prepared train: {int(prepared_train.isna().sum().sum())}")
-    print(f"Remaining NAs in prepared test:  {int(prepared_test.isna().sum().sum())}")
+    print(f"SK_ID_CURR is unique in prepared train: {train_id_is_unique}")
+    print(f"SK_ID_CURR is unique in prepared test:  {test_id_is_unique}")
