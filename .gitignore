@@ -26,6 +26,7 @@ outputs/submissions/*
 !outputs/metrics/.gitkeep
 !outputs/submissions/.gitkeep
 models/
+!src/models/
 *.pkl
 __pycache__/
 .venv/
