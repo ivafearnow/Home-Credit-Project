@@ -204,18 +204,8 @@ def cross_validate_auc(
     mean_auc, std_auc : tuple[float, float]
         Mean and population standard deviation of validation-fold ROC AUC.
     """
-    estimator = _ensure_pipeline(model)
-    folds = StratifiedKFold(n_splits=cv, shuffle=True, random_state=RANDOM_STATE)
-    scores = cross_validate(
-        estimator,
-        X,
-        y,
-        cv=folds,
-        scoring="roc_auc",
-        n_jobs=-1,
-        error_score="raise",
-    )["test_score"]
-    return float(np.mean(scores)), float(np.std(scores))
+    scores = _cross_validate_scores(model, X, y, cv=cv)
+    return float(np.mean(scores["test_auc"])), float(np.std(scores["test_auc"]))
 
 
 def compare_models(
@@ -224,7 +214,7 @@ def compare_models(
     y: pd.Series,
     cv: int = 3,
 ) -> pd.DataFrame:
-    """Compare estimators using the same stratified ROC AUC procedure.
+    """Compare estimators using the same stratified AUC and accuracy procedure.
 
     Parameters
     ----------
@@ -238,16 +228,23 @@ def compare_models(
     Returns
     -------
     pandas.DataFrame
-        Tidy table with ``model``, ``mean_auc``, and ``std_auc``, ordered by
-        mean AUC from highest to lowest.
+    Tidy table with ``model``, ``mean_auc``, ``std_auc``, and
+        ``mean_accuracy``, ordered by mean AUC from highest to lowest.
     """
     if not models:
         raise ValueError("models must contain at least one named estimator.")
 
     results = []
     for name, model in models.items():
-        mean_auc, std_auc = cross_validate_auc(model, X, y, cv=cv)
-        results.append({"model": name, "mean_auc": mean_auc, "std_auc": std_auc})
+        scores = _cross_validate_scores(model, X, y, cv=cv)
+        results.append(
+            {
+                "model": name,
+                "mean_auc": float(np.mean(scores["test_auc"])),
+                "std_auc": float(np.std(scores["test_auc"])),
+                "mean_accuracy": float(np.mean(scores["test_accuracy"])),
+            }
+        )
     return pd.DataFrame(results).sort_values(
         "mean_auc", ascending=False, ignore_index=True
     )
@@ -412,6 +409,27 @@ def _ensure_pipeline(model: BaseEstimator) -> BaseEstimator:
     if isinstance(model, (Pipeline, ImbPipeline)):
         return clone(model)
     return build_model_pipeline(model)
+
+
+def _cross_validate_scores(
+    model: BaseEstimator,
+    X: pd.DataFrame,
+    y: pd.Series,
+    *,
+    cv: int,
+) -> dict[str, np.ndarray]:
+    """Calculate fold-level AUC and accuracy with leakage-safe preprocessing."""
+    estimator = _ensure_pipeline(model)
+    folds = StratifiedKFold(n_splits=cv, shuffle=True, random_state=RANDOM_STATE)
+    return cross_validate(
+        estimator,
+        X,
+        y,
+        cv=folds,
+        scoring={"auc": "roc_auc", "accuracy": "accuracy"},
+        n_jobs=-1,
+        error_score="raise",
+    )
 
 
 def _require_columns(
