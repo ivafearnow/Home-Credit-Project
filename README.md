@@ -4,6 +4,15 @@ Practice Capstone
 
 Ivania Fearnow
 
+## Project layout
+
+- `data/` — raw, interim, and processed datasets (gitignored).
+- `docs/` — planning, decisions, questions, and workflow notes; rendered versions are in `docs/rendered/`.
+- `notebooks/` — active analysis notebooks; prior notebook versions are in `notebooks/archive/`.
+- `outputs/` — generated figures, tables, metrics, and submissions (gitignored).
+- `reports/` — final deliverables and generated report output.
+- `src/` — reusable data-preparation, feature, model, and visualization code.
+
 ## Data Preparation
 
 `src/features/data_preparation.py` creates reproducible, application-level training and test datasets for Home Credit default modeling. It preserves raw CSVs, fits parameters on training data only, applies them to test data, safely aggregates bureau history, saves prepared files, and validates the final schema.

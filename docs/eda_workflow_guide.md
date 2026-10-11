@@ -310,7 +310,7 @@ The "no interpretation" constraint is doing real work. Rubric item 4 wants *your
 between code chunks. If the assistant writes it, you are submitting its reasoning about a business
 problem it did not define.
 
-### The second gate — you write `docs/decisions.md`
+### The second gate — you write `docs/eda_decisions.md`
 
 For every problem the notebook surfaced, write the decision and the reason. Recode `DAYS_EMPLOYED`.
 Drop or keep `XNA`. Impute or flag `EXT_SOURCE_1`. Cap or keep the 117M income. Collapse the
@@ -319,7 +319,7 @@ hand the modeling stage.
 
 ### Chat 5 → critique
 
-> Read `notebooks/01_eda.ipynb` and my interpretations and decisions in `docs/decisions.md`. For each
+> Read `notebooks/01_eda.ipynb` and my interpretations and decisions in `docs/eda_decisions.md`. For each
 > decision, argue against it: what in the notebook contradicts it, what was never checked, and what a
 > skeptical credit-risk reviewer would ask. Then check each question in `docs/questions.md` was
 > actually answered. Do not soften the critique and do not change any decision — list the objections
@@ -380,7 +380,7 @@ Be specific — specificity reads as competence. Something close to:
 > mechanical enumeration — cataloguing 122 columns, checking category levels across train and test —
 > and least reliable when asked to cite industry sources, where I verified each reference. The
 > adversarial critique stage changed [N] of my decisions; I rejected the rest for reasons recorded in
-> `docs/decisions.md`.
+> `docs/eda_decisions.md`.
 
 Fill in `[N]` honestly. A number is more convincing than a claim.
 
