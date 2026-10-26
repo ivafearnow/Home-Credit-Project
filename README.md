@@ -8,7 +8,7 @@ Ivania Fearnow
 
 - `data/` — raw, interim, and processed datasets (gitignored).
 - `docs/` — planning, decisions, questions, and workflow notes; rendered versions are in `docs/rendered/`.
-- `notebooks/` — active EDA (`01_eda.ipynb`) and modeling (`02_modeling.ipynb`) notebooks; prior versions are in `notebooks/archive/`.
+- `notebooks/` — active EDA (`01_eda.ipynb`), modeling (`02_modeling.ipynb`), and model card (`03_model_card.ipynb`) notebooks; prior versions are in `notebooks/archive/`.
 - `outputs/` — generated figures, tables, metrics, and submissions (gitignored).
 - `reports/` — final deliverables and generated report output.
 - `src/` — reusable data-preparation, modeling (`src/models/modeling.py`), feature, and visualization code.
@@ -216,3 +216,66 @@ reusable module from Python, import its functions, for example:
 ```python
 from src.models.modeling import load_prepared_data, fit_final_model, make_submission
 ```
+
+## Model Card
+
+[notebooks/03_model_card.ipynb](notebooks/03_model_card.ipynb) documents the
+final LightGBM model for a business stakeholder deciding whether to deploy it.
+The compiled version, [notebooks/03_model_card.html](notebooks/03_model_card.html),
+hides all code and shows only narrative, tables, and figures. The notebook
+reuses the saved `models/final_lightgbm.joblib` artifact rather than retraining,
+and evaluates decisions on out-of-fold predictions so that no applicant is
+scored by a model fitted on that applicant.
+
+### Recommendation
+
+Do not deploy the model for fully automated approval or denial. It may support a
+controlled, human-reviewed pilot after the gender feature is removed or
+remediated, the adverse-action mapping is validated, and legal and compliance
+approve the process.
+
+### Key results
+
+| Item | Result |
+| --- | --- |
+| Cross-validated AUC | `0.7645 ± 0.0014` (three stratified folds) |
+| Kaggle AUC | `0.75871` private, `0.75817` public |
+| Recommended threshold | `0.15` predicted default probability |
+| At the threshold | 85.9% approval rate, 24.5% precision, 42.8% recall, 5.4% default rate among approved |
+| Estimated profit | 15.15 billion vs. 13.47 billion when approving everyone (+1.69 billion, about +12.5%), in `AMT_CREDIT` currency units |
+
+### Threshold assumptions
+
+The profit scenario assigns `+14%` of the loan amount to an approved loan that
+repays, `−75%` to an approved loan that defaults (75% loss given default, 25%
+recovery), and zero to a denied application. The 14% margin is rounded from
+Home Credit and Finance Bank's reported net interest margin
+([1H 2017 results](https://www.homecredit.net/media/press-releases/2017/29-08-2017-b.aspx));
+the 60%–90% LGD range for unsecured consumer loans comes from
+[industry](https://www.vergentlms.com/?p=8609) and
+[academic](https://eprints.soton.ac.uk/71383) sources. A sensitivity check over
+LGD of 60%–90% and margins of 10%–18% moves the optimal threshold between `0.10`
+and `0.24`.
+
+### Explainability, adverse action, and fairness
+
+- **Top SHAP features** (1,000-row sample): the external credit scores
+  `EXT_SOURCE_2`, `EXT_SOURCE_3`, and `EXT_SOURCE_1`, followed by the
+  credit-to-goods-price ratio, goods price, annuity amount, gender, bureau
+  credit-end date, employment duration, and average bureau debt.
+- **Adverse action mapping** translates these features into draft denial reasons,
+  for example low external scores become "limited or weak credit history with
+  external agencies." The gender feature is excluded as a consumer-facing reason.
+- **Fairness:** at the 0.15 threshold, women are approved at 89.2% and men at
+  79.6% (observed default rates 7.0% and 10.1%). By education, approval ranges
+  from 93.5% (higher education) to 79.0% (lower secondary). No group falls below
+  the four-fifths ratio, but the model's direct use of `CODE_GENDER` is a
+  deployment blocker under ECOA/Regulation B review.
+
+### Limitations
+
+Cross-validated AUC was somewhat optimistic relative to Kaggle; the data comes
+from one lender and a single historical period; the leading external scores are
+opaque; verified income and prior-application outcomes are not used; the
+threshold depends on cost assumptions that exclude operating costs; and drift,
+calibration, and fairness need ongoing monitoring after any deployment.

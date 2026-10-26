@@ -1,0 +1,1836 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Ivania Fearnow">
+
+<title>Home Credit Default Risk — Model Card</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script><script src="03_model_card_files/libs/clipboard/clipboard.min.js"></script>
+<script src="03_model_card_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="03_model_card_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="03_model_card_files/libs/quarto-html/popper.min.js"></script>
+<script src="03_model_card_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="03_model_card_files/libs/quarto-html/anchor.min.js"></script>
+<link href="03_model_card_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="03_model_card_files/libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="03_model_card_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="03_model_card_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="03_model_card_files/libs/bootstrap/bootstrap-917079515d91bccb85b543faf8aa8bb6.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="https://cdn.jsdelivr.net/npm/requirejs@2.3.6/require.min.js" integrity="sha384-c9c+LnTbwQ3aujuU7ULEPVvgLs+Fn6fJUvIGTsuu1ZcCf11fiEubah0ttpca4ntM sha384-6V1/AdqZRWk1KAlWbKBlGhN7VG4iE/yAZcO6NZPMF8od0vukrvr0tg4qY6NSrItx" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#executive-summary" id="toc-executive-summary" class="nav-link active" data-scroll-target="#executive-summary">Executive Summary</a></li>
+  <li><a href="#model-details" id="toc-model-details" class="nav-link" data-scroll-target="#model-details">1. Model Details</a>
+  <ul class="collapse">
+  <li><a href="#key-model-settings" id="toc-key-model-settings" class="nav-link" data-scroll-target="#key-model-settings">Key model settings</a></li>
+  </ul></li>
+  <li><a href="#intended-use" id="toc-intended-use" class="nav-link" data-scroll-target="#intended-use">2. Intended Use</a>
+  <ul class="collapse">
+  <li><a href="#what-this-model-is-not-designed-for" id="toc-what-this-model-is-not-designed-for" class="nav-link" data-scroll-target="#what-this-model-is-not-designed-for">What this model is not designed for</a></li>
+  </ul></li>
+  <li><a href="#performance-metrics" id="toc-performance-metrics" class="nav-link" data-scroll-target="#performance-metrics">3. Performance Metrics</a>
+  <ul class="collapse">
+  <li><a href="#default-0.50-threshold" id="toc-default-0.50-threshold" class="nav-link" data-scroll-target="#default-0.50-threshold">Default 0.50 threshold</a></li>
+  </ul></li>
+  <li><a href="#decision-threshold-analysis" id="toc-decision-threshold-analysis" class="nav-link" data-scroll-target="#decision-threshold-analysis">4. Decision Threshold Analysis</a>
+  <ul class="collapse">
+  <li><a href="#cost-assumptions" id="toc-cost-assumptions" class="nav-link" data-scroll-target="#cost-assumptions">Cost assumptions</a></li>
+  <li><a href="#threshold-sensitivity" id="toc-threshold-sensitivity" class="nav-link" data-scroll-target="#threshold-sensitivity">Threshold sensitivity</a></li>
+  <li><a href="#economic-assumption-sensitivity" id="toc-economic-assumption-sensitivity" class="nav-link" data-scroll-target="#economic-assumption-sensitivity">Economic-assumption sensitivity</a></li>
+  <li><a href="#recommended-threshold-under-the-base-scenario-0.15" id="toc-recommended-threshold-under-the-base-scenario-0.15" class="nav-link" data-scroll-target="#recommended-threshold-under-the-base-scenario-0.15">Recommended threshold under the base scenario: 0.15</a></li>
+  </ul></li>
+  <li><a href="#explainability" id="toc-explainability" class="nav-link" data-scroll-target="#explainability">5. Explainability</a>
+  <ul class="collapse">
+  <li><a href="#plain-english-interpretation" id="toc-plain-english-interpretation" class="nav-link" data-scroll-target="#plain-english-interpretation">Plain-English interpretation</a></li>
+  </ul></li>
+  <li><a href="#adverse-action-mapping" id="toc-adverse-action-mapping" class="nav-link" data-scroll-target="#adverse-action-mapping">6. Adverse Action Mapping</a>
+  <ul class="collapse">
+  <li><a href="#illustrative-denied-applicant-reasons" id="toc-illustrative-denied-applicant-reasons" class="nav-link" data-scroll-target="#illustrative-denied-applicant-reasons">Illustrative denied-applicant reasons</a></li>
+  </ul></li>
+  <li><a href="#fairness-analysis" id="toc-fairness-analysis" class="nav-link" data-scroll-target="#fairness-analysis">7. Fairness Analysis</a>
+  <ul class="collapse">
+  <li><a href="#interpretation-and-implications" id="toc-interpretation-and-implications" class="nav-link" data-scroll-target="#interpretation-and-implications">Interpretation and implications</a></li>
+  </ul></li>
+  <li><a href="#limitations-and-risks" id="toc-limitations-and-risks" class="nav-link" data-scroll-target="#limitations-and-risks">8. Limitations and Risks</a></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Home Credit Default Risk — Model Card</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Ivania Fearnow </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div id="executive-summary" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-10-26T03:05:01.658835Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-10-26T03:05:01.658772Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-10-26T03:05:02.697496Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-10-26T03:05:02.697272Z&quot;}}" data-execution_count="2">
+<section id="executive-summary" class="level2 cell-output cell-output-display cell-output-markdown">
+<h2 class="anchored" data-anchor-id="executive-summary">Executive Summary</h2>
+<p><strong>Recommendation: do not deploy this model for fully automated approval or denial today.</strong> It may be considered for a controlled, human-reviewed pilot only after the fairness and adverse-action issues in this card are resolved, the gender feature is removed or otherwise remediated, and legal/compliance approve the final process.</p>
+<p>Under the base business scenario, the selected <strong>0.15</strong> default-risk threshold approves <strong>85.9%</strong> of applications. On held-out out-of-fold outcomes, it produces an estimated portfolio profit of <strong>15.15 billion <code>AMT_CREDIT</code> units</strong>, versus <strong>13.47 billion</strong> if every applicant is approved—an estimated improvement of <strong>1.69 billion</strong>. These are historical scenario estimates, not guaranteed financial results.</p>
+<p>Key caveats:</p>
+<ul>
+<li>The 0.7645 cross-validated AUC was modestly higher than the 0.75871 private Kaggle AUC, so internal validation was somewhat optimistic.</li>
+<li>The 0.15 threshold and financial gain depend on the assumed 14% repayment margin and 75% loss given default; operating costs are excluded.</li>
+<li>The model directly uses a sex-related feature and shows approval-rate gaps by gender; protected-class and proxy-risk review is required before use.</li>
+<li>The model was built on one historical lender dataset and relies on opaque external scores, so data drift, data availability, and explanation quality require ongoing monitoring.</li>
+</ul>
+</section>
+</div>
+<section id="model-details" class="level2">
+<h2 class="anchored" data-anchor-id="model-details">1. Model Details</h2>
+<p>This card describes the final model artifact proposed for deployment. It is intended to support a business deployment decision; it is not a training notebook and does not refit the model.</p>
+<div id="training-summary" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-10-26T03:05:02.698522Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-10-26T03:05:02.698455Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-10-26T03:05:02.700940Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-10-26T03:05:02.700752Z&quot;}}" data-execution_count="3">
+<div class="cell-output cell-output-display cell-output-markdown">
+<section id="what-this-model-is" class="level3">
+<h3 class="anchored" data-anchor-id="what-this-model-is">What this model is</h3>
+<ul>
+<li><strong>Model type:</strong> LightGBM gradient-boosted decision-tree classifier. It produces a probability-like default-risk score for each application.</li>
+<li><strong>Model version:</strong> 1.0 — saved artifact <code>final_lightgbm.joblib</code> (artifact date: October 11, 2026).</li>
+<li><strong>Decision use:</strong> The score is a risk-ranking input, not an automatic approval or decline decision. A business threshold and appropriate human-review rules are required before deployment.</li>
+</ul>
+</section>
+<section id="training-data-at-a-glance" class="level3">
+<h3 class="anchored" data-anchor-id="training-data-at-a-glance">Training data at a glance</h3>
+<p>The model was fitted on the prepared Home Credit application training data. Each row represents one application. The outcome is the recorded default indicator. The pipeline excludes the application ID and outcome from its model inputs.</p>
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th>Training-data measure</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Applications used for fitting</td>
+<td style="text-align: right;">307,507</td>
+</tr>
+<tr class="even">
+<td>Recorded defaults</td>
+<td style="text-align: right;">24,825 (8.1%)</td>
+</tr>
+<tr class="odd">
+<td>Input features before encoding</td>
+<td style="text-align: right;">177</td>
+</tr>
+<tr class="even">
+<td>Bureau-history aggregate features</td>
+<td style="text-align: right;">40</td>
+</tr>
+</tbody>
+</table>
+<p>The bureau aggregates summarize prior-credit volume, credit status, debt, overdue behavior, and exposure at the application level. They added useful credit-history context without creating multiple rows per applicant.</p>
+</section>
+</div>
+</div>
+<section id="key-model-settings" class="level3">
+<h3 class="anchored" data-anchor-id="key-model-settings">Key model settings</h3>
+<p>The table below is generated from the loaded production artifact rather than copied from the training notebook. These settings control the model’s capacity and regularization; they are included for traceability rather than as deployment controls.</p>
+<div id="hyperparameter-table" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-10-26T03:05:02.701817Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-10-26T03:05:02.701761Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-10-26T03:05:02.706874Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-10-26T03:05:02.706689Z&quot;}}" data-execution_count="4">
+<div class="cell-output cell-output-display">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">Setting</th>
+<th data-quarto-table-cell-role="th">Loaded value</th>
+<th data-quarto-table-cell-role="th">Business interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">0</th>
+<td>Number of trees</td>
+<td>1000.000</td>
+<td>How many sequential decision trees contribute ...</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">1</th>
+<td>Learning rate</td>
+<td>0.050</td>
+<td>How much each new tree can change the overall ...</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">2</th>
+<td>Maximum leaves per tree</td>
+<td>31.000</td>
+<td>A control on the complexity of each tree</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">3</th>
+<td>Maximum tree depth</td>
+<td>6.000</td>
+<td>A limit on how many sequential splits a tree c...</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">4</th>
+<td>Minimum records per leaf</td>
+<td>120.000</td>
+<td>Prevents very small groups from driving a split</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">5</th>
+<td>Row sampling share</td>
+<td>1.000</td>
+<td>Share of training rows sampled for each tree</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">6</th>
+<td>Feature sampling share</td>
+<td>0.750</td>
+<td>Share of input features considered by each tree</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">7</th>
+<td>L1 regularization</td>
+<td>0.100</td>
+<td>Penalty that discourages unnecessary complexity</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">8</th>
+<td>L2 regularization</td>
+<td>0.001</td>
+<td>Penalty that stabilizes the fitted model</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">9</th>
+<td>Random seed</td>
+<td>42.000</td>
+<td>Fixed value used to make the training process ...</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="intended-use" class="level2">
+<h2 class="anchored" data-anchor-id="intended-use">2. Intended Use</h2>
+<p>This model is for Home Credit underwriting and credit-risk teams. It estimates which new applicants are more likely to default, so teams can use the score to flag applications for closer attention.</p>
+<p>The score can inform an approve, decline, or manual-review workflow. It should be considered alongside Home Credit’s lending policy, affordability checks, required documentation, and the judgment of the responsible team.</p>
+<section id="what-this-model-is-not-designed-for" class="level3">
+<h3 class="anchored" data-anchor-id="what-this-model-is-not-designed-for">What this model is not designed for</h3>
+<ul>
+<li>It is not designed to make fully automated denial decisions without human review and appropriate governance.</li>
+<li>It is not validated for countries, markets, or lending products other than the Home Credit application population used to train it.</li>
+<li>It is not a loan-pricing tool and should not be used to set interest rates, fees, or credit limits.</li>
+<li>It is not designed to monitor existing customers after origination, predict collections outcomes, or detect fraud.</li>
+<li>It does not replace legal, compliance, fairness, or adverse-action requirements.</li>
+</ul>
+</section>
+</section>
+<section id="performance-metrics" class="level2">
+<h2 class="anchored" data-anchor-id="performance-metrics">3. Performance Metrics</h2>
+<p>The primary measure of how well the model ranks risk is area under the ROC curve (AUC). An AUC of 0.50 represents no ranking ability; higher values represent better separation of applicants who did and did not default.</p>
+<ul>
+<li><strong>Cross-validated AUC:</strong> <strong>0.7645 ± 0.0014</strong>, measured with three stratified folds in the model-selection notebook.</li>
+<li><strong>Kaggle AUC:</strong> <strong>0.75871</strong> on the private leaderboard and <strong>0.75817</strong> on the public leaderboard.</li>
+</ul>
+<p>The external Kaggle results are slightly lower than the cross-validated result, which suggests the cross-validation estimate was modestly optimistic but that the model still generalizes to unseen applications.</p>
+<section id="default-0.50-threshold" class="level3">
+<h3 class="anchored" data-anchor-id="default-0.50-threshold">Default 0.50 threshold</h3>
+<p>The following operating results use a 0.50 default-risk threshold: an applicant at or above 0.50 is flagged as likely to default. This is a reference point only; the business threshold is selected in Section 4.</p>
+<div id="threshold-metrics-table" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-10-26T03:05:02.751768Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-10-26T03:05:02.751693Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-10-26T03:05:14.320445Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-10-26T03:05:14.320207Z&quot;}}" data-execution_count="6">
+<div class="cell-output cell-output-stderr">
+<pre><code>Matplotlib is building the font cache; this may take a moment.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<style type="text/css">
+</style>
+
+<table id="T_eecfe" class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th class="blank level0" data-quarto-table-cell-role="th">&nbsp;</th>
+<th id="T_eecfe_level0_col0" class="col_heading level0 col0" data-quarto-table-cell-role="th">Metric</th>
+<th id="T_eecfe_level0_col1" class="col_heading level0 col1" data-quarto-table-cell-role="th">Value at 0.50 threshold</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th id="T_eecfe_level0_row0" class="row_heading level0 row0" data-quarto-table-cell-role="th">0</th>
+<td id="T_eecfe_row0_col0" class="data row0 col0">Precision</td>
+<td id="T_eecfe_row0_col1" class="data row0 col1">53.6%</td>
+</tr>
+<tr class="even">
+<th id="T_eecfe_level0_row1" class="row_heading level0 row1" data-quarto-table-cell-role="th">1</th>
+<td id="T_eecfe_row1_col0" class="data row1 col0">Recall</td>
+<td id="T_eecfe_row1_col1" class="data row1 col1">3.8%</td>
+</tr>
+<tr class="odd">
+<th id="T_eecfe_level0_row2" class="row_heading level0 row2" data-quarto-table-cell-role="th">2</th>
+<td id="T_eecfe_row2_col0" class="data row2 col0">Approval rate</td>
+<td id="T_eecfe_row2_col1" class="data row2 col1">99.4%</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<ul>
+<li><strong>Precision</strong> is the share of applicants flagged as likely to default who actually defaulted.</li>
+<li><strong>Recall</strong> is the share of all actual defaults that the model flagged as likely to default.</li>
+<li><strong>Approval rate</strong> is the share of applicants not flagged at this threshold, so they would remain eligible to proceed in an approval or review workflow.</li>
+</ul>
+<p>The 0.50 threshold above is not the recommended deployment threshold; Section 4 will choose a threshold based on the business trade-off between missed defaults, unnecessary reviews or declines, and approval volume.</p>
+</section>
+</section>
+<section id="decision-threshold-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="decision-threshold-analysis">4. Decision Threshold Analysis</h2>
+<p>A threshold converts the model’s risk score into an action: applications with a predicted default probability at or above the threshold are denied or routed for review; the rest are approved. This section uses a simple portfolio-profit scenario to make that trade-off visible. Results are estimates based on historical out-of-fold outcomes, not a forecast or a complete lending P&amp;L.</p>
+<section id="cost-assumptions" class="level3">
+<h3 class="anchored" data-anchor-id="cost-assumptions">Cost assumptions</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Assumption</th>
+<th style="text-align: right;">Value used</th>
+<th>Basis and source</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Profit on a repaid loan</td>
+<td style="text-align: right;">14% of <code>AMT_CREDIT</code></td>
+<td>Rounded from Home Credit &amp; Finance Bank’s reported net interest margin of 13.6% in 1H 2017 and 13.9% in 1H 2016. <a href="https://www.homecredit.net/media/press-releases/2017/29-08-2017-b.aspx">Home Credit release</a>. As a U.S. comparison only, the Federal Reserve reported an 11.65% 24-month personal-loan APR. <a href="https://www.federalreserve.gov/releases/g19/20260206/">Federal Reserve G.19</a>.</td>
+</tr>
+<tr class="even">
+<td>Loss given default (LGD)</td>
+<td style="text-align: right;">75% of <code>AMT_CREDIT</code></td>
+<td>Scenario assumption within a 60%–90% unsecured-consumer-loan range. <a href="https://www.vergentlms.com/?p=8609">Industry background</a>; <a href="https://eprints.soton.ac.uk/71383">academic background: Zhang &amp; Thomas</a>.</td>
+</tr>
+<tr class="odd">
+<td>Recovery rate</td>
+<td style="text-align: right;">25%</td>
+<td>Calculated as 1 − 75% LGD.</td>
+</tr>
+</tbody>
+</table>
+<blockquote class="blockquote">
+<p><strong>Important limitation:</strong> Net interest margin is before operating costs, so the 14% profit assumption likely overstates the profit available from a repaid loan. The source figures also describe a particular historical business and are not a pricing recommendation.</p>
+</blockquote>
+<p>For each threshold, this analysis assigns <strong>+0.14 × <code>AMT_CREDIT</code></strong> to an approved application that repaid, <strong>−0.75 × <code>AMT_CREDIT</code></strong> to an approved application that defaulted, and <strong>0</strong> to a denied application. It applies those rules to held-out, out-of-fold predictions, so each applicant’s score was produced by a model that was not fitted on that applicant. Monetary totals remain in the dataset’s <code>AMT_CREDIT</code> units.</p>
+<div id="threshold-profit-calculation" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-10-26T03:05:14.321795Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-10-26T03:05:14.321617Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-10-26T03:05:18.972394Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-10-26T03:05:18.972164Z&quot;}}" data-execution_count="7">
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="03_model_card_files/figure-html/cell-8-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="threshold-sensitivity" class="level3">
+<h3 class="anchored" data-anchor-id="threshold-sensitivity">Threshold sensitivity</h3>
+<p>The table shows how the operating trade-off changes across the tested thresholds. Precision and recall describe the denied or flagged group; the default rate among approved applicants describes the residual risk in the approved portfolio.</p>
+<div id="threshold-sensitivity-table" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-10-26T03:05:18.973477Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-10-26T03:05:18.973412Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-10-26T03:05:18.978256Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-10-26T03:05:18.978057Z&quot;}}" data-execution_count="8">
+<div class="cell-output cell-output-display">
+<style type="text/css">
+</style>
+
+<table id="T_d7510" class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th class="blank level0" data-quarto-table-cell-role="th">&nbsp;</th>
+<th id="T_d7510_level0_col0" class="col_heading level0 col0" data-quarto-table-cell-role="th">Threshold</th>
+<th id="T_d7510_level0_col1" class="col_heading level0 col1" data-quarto-table-cell-role="th">Approval rate</th>
+<th id="T_d7510_level0_col2" class="col_heading level0 col2" data-quarto-table-cell-role="th">Default rate among approved</th>
+<th id="T_d7510_level0_col3" class="col_heading level0 col3" data-quarto-table-cell-role="th">Precision</th>
+<th id="T_d7510_level0_col4" class="col_heading level0 col4" data-quarto-table-cell-role="th">Recall</th>
+<th id="T_d7510_level0_col5" class="col_heading level0 col5" data-quarto-table-cell-role="th">Total profit</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th id="T_d7510_level0_row0" class="row_heading level0 row0" data-quarto-table-cell-role="th">0</th>
+<td id="T_d7510_row0_col0" class="data row0 col0">0.02</td>
+<td id="T_d7510_row0_col1" class="data row0 col1">19.4%</td>
+<td id="T_d7510_row0_col2" class="data row0 col2">1.5%</td>
+<td id="T_d7510_row0_col3" class="data row0 col3">9.7%</td>
+<td id="T_d7510_row0_col4" class="data row0 col4">96.5%</td>
+<td id="T_d7510_row0_col5" class="data row0 col5">4,982,394,355</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row1" class="row_heading level0 row1" data-quarto-table-cell-role="th">1</th>
+<td id="T_d7510_row1_col0" class="data row1 col0">0.03</td>
+<td id="T_d7510_row1_col1" class="data row1 col1">32.4%</td>
+<td id="T_d7510_row1_col2" class="data row1 col2">1.9%</td>
+<td id="T_d7510_row1_col3" class="data row1 col3">11.0%</td>
+<td id="T_d7510_row1_col4" class="data row1 col4">92.2%</td>
+<td id="T_d7510_row1_col5" class="data row1 col5">7,873,430,393</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row2" class="row_heading level0 row2" data-quarto-table-cell-role="th">2</th>
+<td id="T_d7510_row2_col0" class="data row2 col0">0.04</td>
+<td id="T_d7510_row2_col1" class="data row2 col1">43.1%</td>
+<td id="T_d7510_row2_col2" class="data row2 col2">2.4%</td>
+<td id="T_d7510_row2_col3" class="data row2 col3">12.4%</td>
+<td id="T_d7510_row2_col4" class="data row2 col4">87.1%</td>
+<td id="T_d7510_row2_col5" class="data row2 col5">9,990,352,122</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row3" class="row_heading level0 row3" data-quarto-table-cell-role="th">3</th>
+<td id="T_d7510_row3_col0" class="data row3 col0">0.05</td>
+<td id="T_d7510_row3_col1" class="data row3 col1">51.6%</td>
+<td id="T_d7510_row3_col2" class="data row3 col2">2.8%</td>
+<td id="T_d7510_row3_col3" class="data row3 col3">13.6%</td>
+<td id="T_d7510_row3_col4" class="data row3 col4">81.9%</td>
+<td id="T_d7510_row3_col5" class="data row3 col5">11,526,639,065</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row4" class="row_heading level0 row4" data-quarto-table-cell-role="th">4</th>
+<td id="T_d7510_row4_col0" class="data row4 col0">0.06</td>
+<td id="T_d7510_row4_col1" class="data row4 col1">58.4%</td>
+<td id="T_d7510_row4_col2" class="data row4 col2">3.2%</td>
+<td id="T_d7510_row4_col3" class="data row4 col3">14.9%</td>
+<td id="T_d7510_row4_col4" class="data row4 col4">76.8%</td>
+<td id="T_d7510_row4_col5" class="data row4 col5">12,636,840,064</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row5" class="row_heading level0 row5" data-quarto-table-cell-role="th">5</th>
+<td id="T_d7510_row5_col0" class="data row5 col0">0.07</td>
+<td id="T_d7510_row5_col1" class="data row5 col1">64.0%</td>
+<td id="T_d7510_row5_col2" class="data row5 col2">3.5%</td>
+<td id="T_d7510_row5_col3" class="data row5 col3">16.1%</td>
+<td id="T_d7510_row5_col4" class="data row5 col4">72.0%</td>
+<td id="T_d7510_row5_col5" class="data row5 col5">13,418,715,651</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row6" class="row_heading level0 row6" data-quarto-table-cell-role="th">6</th>
+<td id="T_d7510_row6_col0" class="data row6 col0">0.08</td>
+<td id="T_d7510_row6_col1" class="data row6 col1">68.5%</td>
+<td id="T_d7510_row6_col2" class="data row6 col2">3.8%</td>
+<td id="T_d7510_row6_col3" class="data row6 col3">17.3%</td>
+<td id="T_d7510_row6_col4" class="data row6 col4">67.4%</td>
+<td id="T_d7510_row6_col5" class="data row6 col5">13,976,542,406</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row7" class="row_heading level0 row7" data-quarto-table-cell-role="th">7</th>
+<td id="T_d7510_row7_col0" class="data row7 col0">0.09</td>
+<td id="T_d7510_row7_col1" class="data row7 col1">72.4%</td>
+<td id="T_d7510_row7_col2" class="data row7 col2">4.1%</td>
+<td id="T_d7510_row7_col3" class="data row7 col3">18.4%</td>
+<td id="T_d7510_row7_col4" class="data row7 col4">63.1%</td>
+<td id="T_d7510_row7_col5" class="data row7 col5">14,397,831,869</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row8" class="row_heading level0 row8" data-quarto-table-cell-role="th">8</th>
+<td id="T_d7510_row8_col0" class="data row8 col0">0.10</td>
+<td id="T_d7510_row8_col1" class="data row8 col1">75.5%</td>
+<td id="T_d7510_row8_col2" class="data row8 col2">4.3%</td>
+<td id="T_d7510_row8_col3" class="data row8 col3">19.6%</td>
+<td id="T_d7510_row8_col4" class="data row8 col4">59.3%</td>
+<td id="T_d7510_row8_col5" class="data row8 col5">14,685,963,407</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row9" class="row_heading level0 row9" data-quarto-table-cell-role="th">9</th>
+<td id="T_d7510_row9_col0" class="data row9 col0">0.11</td>
+<td id="T_d7510_row9_col1" class="data row9 col1">78.2%</td>
+<td id="T_d7510_row9_col2" class="data row9 col2">4.6%</td>
+<td id="T_d7510_row9_col3" class="data row9 col3">20.6%</td>
+<td id="T_d7510_row9_col4" class="data row9 col4">55.7%</td>
+<td id="T_d7510_row9_col5" class="data row9 col5">14,890,444,573</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row10" class="row_heading level0 row10" data-quarto-table-cell-role="th">10</th>
+<td id="T_d7510_row10_col0" class="data row10 col0">0.12</td>
+<td id="T_d7510_row10_col1" class="data row10 col1">80.6%</td>
+<td id="T_d7510_row10_col2" class="data row10 col2">4.8%</td>
+<td id="T_d7510_row10_col3" class="data row10 col3">21.7%</td>
+<td id="T_d7510_row10_col4" class="data row10 col4">52.3%</td>
+<td id="T_d7510_row10_col5" class="data row10 col5">15,045,088,994</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row11" class="row_heading level0 row11" data-quarto-table-cell-role="th">11</th>
+<td id="T_d7510_row11_col0" class="data row11 col0">0.13</td>
+<td id="T_d7510_row11_col1" class="data row11 col1">82.6%</td>
+<td id="T_d7510_row11_col2" class="data row11 col2">5.0%</td>
+<td id="T_d7510_row11_col3" class="data row11 col3">22.7%</td>
+<td id="T_d7510_row11_col4" class="data row11 col4">48.9%</td>
+<td id="T_d7510_row11_col5" class="data row11 col5">15,122,000,451</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row12" class="row_heading level0 row12" data-quarto-table-cell-role="th">12</th>
+<td id="T_d7510_row12_col0" class="data row12 col0">0.14</td>
+<td id="T_d7510_row12_col1" class="data row12 col1">84.4%</td>
+<td id="T_d7510_row12_col2" class="data row12 col2">5.2%</td>
+<td id="T_d7510_row12_col3" class="data row12 col3">23.6%</td>
+<td id="T_d7510_row12_col4" class="data row12 col4">45.7%</td>
+<td id="T_d7510_row12_col5" class="data row12 col5">15,147,899,488</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row13" class="row_heading level0 row13" data-quarto-table-cell-role="th">13</th>
+<td id="T_d7510_row13_col0" class="data row13 col0">0.15</td>
+<td id="T_d7510_row13_col1" class="data row13 col1">85.9%</td>
+<td id="T_d7510_row13_col2" class="data row13 col2">5.4%</td>
+<td id="T_d7510_row13_col3" class="data row13 col3">24.5%</td>
+<td id="T_d7510_row13_col4" class="data row13 col4">42.8%</td>
+<td id="T_d7510_row13_col5" class="data row13 col5">15,150,551,015</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row14" class="row_heading level0 row14" data-quarto-table-cell-role="th">14</th>
+<td id="T_d7510_row14_col0" class="data row14 col0">0.16</td>
+<td id="T_d7510_row14_col1" class="data row14 col1">87.2%</td>
+<td id="T_d7510_row14_col2" class="data row14 col2">5.5%</td>
+<td id="T_d7510_row14_col3" class="data row14 col3">25.4%</td>
+<td id="T_d7510_row14_col4" class="data row14 col4">40.2%</td>
+<td id="T_d7510_row14_col5" class="data row14 col5">15,135,285,238</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row15" class="row_heading level0 row15" data-quarto-table-cell-role="th">15</th>
+<td id="T_d7510_row15_col0" class="data row15 col0">0.17</td>
+<td id="T_d7510_row15_col1" class="data row15 col1">88.5%</td>
+<td id="T_d7510_row15_col2" class="data row15 col2">5.7%</td>
+<td id="T_d7510_row15_col3" class="data row15 col3">26.4%</td>
+<td id="T_d7510_row15_col4" class="data row15 col4">37.7%</td>
+<td id="T_d7510_row15_col5" class="data row15 col5">15,134,175,961</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row16" class="row_heading level0 row16" data-quarto-table-cell-role="th">16</th>
+<td id="T_d7510_row16_col0" class="data row16 col0">0.18</td>
+<td id="T_d7510_row16_col1" class="data row16 col1">89.5%</td>
+<td id="T_d7510_row16_col2" class="data row16 col2">5.8%</td>
+<td id="T_d7510_row16_col3" class="data row16 col3">27.3%</td>
+<td id="T_d7510_row16_col4" class="data row16 col4">35.5%</td>
+<td id="T_d7510_row16_col5" class="data row16 col5">15,130,747,487</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row17" class="row_heading level0 row17" data-quarto-table-cell-role="th">17</th>
+<td id="T_d7510_row17_col0" class="data row17 col0">0.19</td>
+<td id="T_d7510_row17_col1" class="data row17 col1">90.5%</td>
+<td id="T_d7510_row17_col2" class="data row17 col2">5.9%</td>
+<td id="T_d7510_row17_col3" class="data row17 col3">28.3%</td>
+<td id="T_d7510_row17_col4" class="data row17 col4">33.4%</td>
+<td id="T_d7510_row17_col5" class="data row17 col5">15,106,568,025</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row18" class="row_heading level0 row18" data-quarto-table-cell-role="th">18</th>
+<td id="T_d7510_row18_col0" class="data row18 col0">0.20</td>
+<td id="T_d7510_row18_col1" class="data row18 col1">91.3%</td>
+<td id="T_d7510_row18_col2" class="data row18 col2">6.1%</td>
+<td id="T_d7510_row18_col3" class="data row18 col3">29.2%</td>
+<td id="T_d7510_row18_col4" class="data row18 col4">31.3%</td>
+<td id="T_d7510_row18_col5" class="data row18 col5">15,063,592,607</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row19" class="row_heading level0 row19" data-quarto-table-cell-role="th">19</th>
+<td id="T_d7510_row19_col0" class="data row19 col0">0.21</td>
+<td id="T_d7510_row19_col1" class="data row19 col1">92.1%</td>
+<td id="T_d7510_row19_col2" class="data row19 col2">6.2%</td>
+<td id="T_d7510_row19_col3" class="data row19 col3">30.1%</td>
+<td id="T_d7510_row19_col4" class="data row19 col4">29.4%</td>
+<td id="T_d7510_row19_col5" class="data row19 col5">15,030,301,129</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row20" class="row_heading level0 row20" data-quarto-table-cell-role="th">20</th>
+<td id="T_d7510_row20_col0" class="data row20 col0">0.22</td>
+<td id="T_d7510_row20_col1" class="data row20 col1">92.8%</td>
+<td id="T_d7510_row20_col2" class="data row20 col2">6.3%</td>
+<td id="T_d7510_row20_col3" class="data row20 col3">30.8%</td>
+<td id="T_d7510_row20_col4" class="data row20 col4">27.4%</td>
+<td id="T_d7510_row20_col5" class="data row20 col5">14,957,781,358</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row21" class="row_heading level0 row21" data-quarto-table-cell-role="th">21</th>
+<td id="T_d7510_row21_col0" class="data row21 col0">0.23</td>
+<td id="T_d7510_row21_col1" class="data row21 col1">93.5%</td>
+<td id="T_d7510_row21_col2" class="data row21 col2">6.4%</td>
+<td id="T_d7510_row21_col3" class="data row21 col3">31.8%</td>
+<td id="T_d7510_row21_col4" class="data row21 col4">25.7%</td>
+<td id="T_d7510_row21_col5" class="data row21 col5">14,907,110,557</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row22" class="row_heading level0 row22" data-quarto-table-cell-role="th">22</th>
+<td id="T_d7510_row22_col0" class="data row22 col0">0.24</td>
+<td id="T_d7510_row22_col1" class="data row22 col1">94.0%</td>
+<td id="T_d7510_row22_col2" class="data row22 col2">6.5%</td>
+<td id="T_d7510_row22_col3" class="data row22 col3">32.6%</td>
+<td id="T_d7510_row22_col4" class="data row22 col4">24.2%</td>
+<td id="T_d7510_row22_col5" class="data row22 col5">14,857,611,853</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row23" class="row_heading level0 row23" data-quarto-table-cell-role="th">23</th>
+<td id="T_d7510_row23_col0" class="data row23 col0">0.25</td>
+<td id="T_d7510_row23_col1" class="data row23 col1">94.6%</td>
+<td id="T_d7510_row23_col2" class="data row23 col2">6.6%</td>
+<td id="T_d7510_row23_col3" class="data row23 col3">33.5%</td>
+<td id="T_d7510_row23_col4" class="data row23 col4">22.6%</td>
+<td id="T_d7510_row23_col5" class="data row23 col5">14,790,558,979</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row24" class="row_heading level0 row24" data-quarto-table-cell-role="th">24</th>
+<td id="T_d7510_row24_col0" class="data row24 col0">0.26</td>
+<td id="T_d7510_row24_col1" class="data row24 col1">95.0%</td>
+<td id="T_d7510_row24_col2" class="data row24 col2">6.7%</td>
+<td id="T_d7510_row24_col3" class="data row24 col3">34.4%</td>
+<td id="T_d7510_row24_col4" class="data row24 col4">21.2%</td>
+<td id="T_d7510_row24_col5" class="data row24 col5">14,737,848,855</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row25" class="row_heading level0 row25" data-quarto-table-cell-role="th">25</th>
+<td id="T_d7510_row25_col0" class="data row25 col0">0.27</td>
+<td id="T_d7510_row25_col1" class="data row25 col1">95.4%</td>
+<td id="T_d7510_row25_col2" class="data row25 col2">6.8%</td>
+<td id="T_d7510_row25_col3" class="data row25 col3">35.2%</td>
+<td id="T_d7510_row25_col4" class="data row25 col4">19.9%</td>
+<td id="T_d7510_row25_col5" class="data row25 col5">14,681,116,754</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row26" class="row_heading level0 row26" data-quarto-table-cell-role="th">26</th>
+<td id="T_d7510_row26_col0" class="data row26 col0">0.28</td>
+<td id="T_d7510_row26_col1" class="data row26 col1">95.8%</td>
+<td id="T_d7510_row26_col2" class="data row26 col2">6.9%</td>
+<td id="T_d7510_row26_col3" class="data row26 col3">36.0%</td>
+<td id="T_d7510_row26_col4" class="data row26 col4">18.6%</td>
+<td id="T_d7510_row26_col5" class="data row26 col5">14,624,226,673</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row27" class="row_heading level0 row27" data-quarto-table-cell-role="th">27</th>
+<td id="T_d7510_row27_col0" class="data row27 col0">0.29</td>
+<td id="T_d7510_row27_col1" class="data row27 col1">96.2%</td>
+<td id="T_d7510_row27_col2" class="data row27 col2">6.9%</td>
+<td id="T_d7510_row27_col3" class="data row27 col3">36.8%</td>
+<td id="T_d7510_row27_col4" class="data row27 col4">17.4%</td>
+<td id="T_d7510_row27_col5" class="data row27 col5">14,566,620,748</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row28" class="row_heading level0 row28" data-quarto-table-cell-role="th">28</th>
+<td id="T_d7510_row28_col0" class="data row28 col0">0.30</td>
+<td id="T_d7510_row28_col1" class="data row28 col1">96.5%</td>
+<td id="T_d7510_row28_col2" class="data row28 col2">7.0%</td>
+<td id="T_d7510_row28_col3" class="data row28 col3">37.5%</td>
+<td id="T_d7510_row28_col4" class="data row28 col4">16.3%</td>
+<td id="T_d7510_row28_col5" class="data row28 col5">14,509,034,325</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row29" class="row_heading level0 row29" data-quarto-table-cell-role="th">29</th>
+<td id="T_d7510_row29_col0" class="data row29 col0">0.31</td>
+<td id="T_d7510_row29_col1" class="data row29 col1">96.8%</td>
+<td id="T_d7510_row29_col2" class="data row29 col2">7.1%</td>
+<td id="T_d7510_row29_col3" class="data row29 col3">38.3%</td>
+<td id="T_d7510_row29_col4" class="data row29 col4">15.3%</td>
+<td id="T_d7510_row29_col5" class="data row29 col5">14,455,437,960</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row30" class="row_heading level0 row30" data-quarto-table-cell-role="th">30</th>
+<td id="T_d7510_row30_col0" class="data row30 col0">0.32</td>
+<td id="T_d7510_row30_col1" class="data row30 col1">97.0%</td>
+<td id="T_d7510_row30_col2" class="data row30 col2">7.1%</td>
+<td id="T_d7510_row30_col3" class="data row30 col3">38.9%</td>
+<td id="T_d7510_row30_col4" class="data row30 col4">14.3%</td>
+<td id="T_d7510_row30_col5" class="data row30 col5">14,404,343,385</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row31" class="row_heading level0 row31" data-quarto-table-cell-role="th">31</th>
+<td id="T_d7510_row31_col0" class="data row31 col0">0.33</td>
+<td id="T_d7510_row31_col1" class="data row31 col1">97.3%</td>
+<td id="T_d7510_row31_col2" class="data row31 col2">7.2%</td>
+<td id="T_d7510_row31_col3" class="data row31 col3">39.8%</td>
+<td id="T_d7510_row31_col4" class="data row31 col4">13.5%</td>
+<td id="T_d7510_row31_col5" class="data row31 col5">14,362,943,792</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row32" class="row_heading level0 row32" data-quarto-table-cell-role="th">32</th>
+<td id="T_d7510_row32_col0" class="data row32 col0">0.34</td>
+<td id="T_d7510_row32_col1" class="data row32 col1">97.5%</td>
+<td id="T_d7510_row32_col2" class="data row32 col2">7.2%</td>
+<td id="T_d7510_row32_col3" class="data row32 col3">40.7%</td>
+<td id="T_d7510_row32_col4" class="data row32 col4">12.6%</td>
+<td id="T_d7510_row32_col5" class="data row32 col5">14,319,268,599</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row33" class="row_heading level0 row33" data-quarto-table-cell-role="th">33</th>
+<td id="T_d7510_row33_col0" class="data row33 col0">0.35</td>
+<td id="T_d7510_row33_col1" class="data row33 col1">97.7%</td>
+<td id="T_d7510_row33_col2" class="data row33 col2">7.3%</td>
+<td id="T_d7510_row33_col3" class="data row33 col3">41.3%</td>
+<td id="T_d7510_row33_col4" class="data row33 col4">11.7%</td>
+<td id="T_d7510_row33_col5" class="data row33 col5">14,268,593,051</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row34" class="row_heading level0 row34" data-quarto-table-cell-role="th">34</th>
+<td id="T_d7510_row34_col0" class="data row34 col0">0.36</td>
+<td id="T_d7510_row34_col1" class="data row34 col1">97.9%</td>
+<td id="T_d7510_row34_col2" class="data row34 col2">7.3%</td>
+<td id="T_d7510_row34_col3" class="data row34 col3">42.2%</td>
+<td id="T_d7510_row34_col4" class="data row34 col4">11.0%</td>
+<td id="T_d7510_row34_col5" class="data row34 col5">14,225,966,068</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row35" class="row_heading level0 row35" data-quarto-table-cell-role="th">35</th>
+<td id="T_d7510_row35_col0" class="data row35 col0">0.37</td>
+<td id="T_d7510_row35_col1" class="data row35 col1">98.1%</td>
+<td id="T_d7510_row35_col2" class="data row35 col2">7.4%</td>
+<td id="T_d7510_row35_col3" class="data row35 col3">42.7%</td>
+<td id="T_d7510_row35_col4" class="data row35 col4">10.2%</td>
+<td id="T_d7510_row35_col5" class="data row35 col5">14,174,100,530</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row36" class="row_heading level0 row36" data-quarto-table-cell-role="th">36</th>
+<td id="T_d7510_row36_col0" class="data row36 col0">0.38</td>
+<td id="T_d7510_row36_col1" class="data row36 col1">98.2%</td>
+<td id="T_d7510_row36_col2" class="data row36 col2">7.4%</td>
+<td id="T_d7510_row36_col3" class="data row36 col3">43.9%</td>
+<td id="T_d7510_row36_col4" class="data row36 col4">9.6%</td>
+<td id="T_d7510_row36_col5" class="data row36 col5">14,143,725,271</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row37" class="row_heading level0 row37" data-quarto-table-cell-role="th">37</th>
+<td id="T_d7510_row37_col0" class="data row37 col0">0.39</td>
+<td id="T_d7510_row37_col1" class="data row37 col1">98.4%</td>
+<td id="T_d7510_row37_col2" class="data row37 col2">7.5%</td>
+<td id="T_d7510_row37_col3" class="data row37 col3">44.5%</td>
+<td id="T_d7510_row37_col4" class="data row37 col4">8.9%</td>
+<td id="T_d7510_row37_col5" class="data row37 col5">14,097,509,942</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row38" class="row_heading level0 row38" data-quarto-table-cell-role="th">38</th>
+<td id="T_d7510_row38_col0" class="data row38 col0">0.40</td>
+<td id="T_d7510_row38_col1" class="data row38 col1">98.5%</td>
+<td id="T_d7510_row38_col2" class="data row38 col2">7.5%</td>
+<td id="T_d7510_row38_col3" class="data row38 col3">45.2%</td>
+<td id="T_d7510_row38_col4" class="data row38 col4">8.3%</td>
+<td id="T_d7510_row38_col5" class="data row38 col5">14,055,771,482</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row39" class="row_heading level0 row39" data-quarto-table-cell-role="th">39</th>
+<td id="T_d7510_row39_col0" class="data row39 col0">0.41</td>
+<td id="T_d7510_row39_col1" class="data row39 col1">98.6%</td>
+<td id="T_d7510_row39_col2" class="data row39 col2">7.5%</td>
+<td id="T_d7510_row39_col3" class="data row39 col3">46.1%</td>
+<td id="T_d7510_row39_col4" class="data row39 col4">7.8%</td>
+<td id="T_d7510_row39_col5" class="data row39 col5">14,024,949,369</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row40" class="row_heading level0 row40" data-quarto-table-cell-role="th">40</th>
+<td id="T_d7510_row40_col0" class="data row40 col0">0.42</td>
+<td id="T_d7510_row40_col1" class="data row40 col1">98.8%</td>
+<td id="T_d7510_row40_col2" class="data row40 col2">7.6%</td>
+<td id="T_d7510_row40_col3" class="data row40 col3">46.8%</td>
+<td id="T_d7510_row40_col4" class="data row40 col4">7.1%</td>
+<td id="T_d7510_row40_col5" class="data row40 col5">13,986,638,903</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row41" class="row_heading level0 row41" data-quarto-table-cell-role="th">41</th>
+<td id="T_d7510_row41_col0" class="data row41 col0">0.43</td>
+<td id="T_d7510_row41_col1" class="data row41 col1">98.9%</td>
+<td id="T_d7510_row41_col2" class="data row41 col2">7.6%</td>
+<td id="T_d7510_row41_col3" class="data row41 col3">47.8%</td>
+<td id="T_d7510_row41_col4" class="data row41 col4">6.7%</td>
+<td id="T_d7510_row41_col5" class="data row41 col5">13,957,133,157</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row42" class="row_heading level0 row42" data-quarto-table-cell-role="th">42</th>
+<td id="T_d7510_row42_col0" class="data row42 col0">0.44</td>
+<td id="T_d7510_row42_col1" class="data row42 col1">99.0%</td>
+<td id="T_d7510_row42_col2" class="data row42 col2">7.7%</td>
+<td id="T_d7510_row42_col3" class="data row42 col3">48.6%</td>
+<td id="T_d7510_row42_col4" class="data row42 col4">6.2%</td>
+<td id="T_d7510_row42_col5" class="data row42 col5">13,924,574,144</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row43" class="row_heading level0 row43" data-quarto-table-cell-role="th">43</th>
+<td id="T_d7510_row43_col0" class="data row43 col0">0.45</td>
+<td id="T_d7510_row43_col1" class="data row43 col1">99.1%</td>
+<td id="T_d7510_row43_col2" class="data row43 col2">7.7%</td>
+<td id="T_d7510_row43_col3" class="data row43 col3">49.4%</td>
+<td id="T_d7510_row43_col4" class="data row43 col4">5.7%</td>
+<td id="T_d7510_row43_col5" class="data row43 col5">13,898,529,761</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row44" class="row_heading level0 row44" data-quarto-table-cell-role="th">44</th>
+<td id="T_d7510_row44_col0" class="data row44 col0">0.46</td>
+<td id="T_d7510_row44_col1" class="data row44 col1">99.1%</td>
+<td id="T_d7510_row44_col2" class="data row44 col2">7.7%</td>
+<td id="T_d7510_row44_col3" class="data row44 col3">50.1%</td>
+<td id="T_d7510_row44_col4" class="data row44 col4">5.4%</td>
+<td id="T_d7510_row44_col5" class="data row44 col5">13,870,141,791</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row45" class="row_heading level0 row45" data-quarto-table-cell-role="th">45</th>
+<td id="T_d7510_row45_col0" class="data row45 col0">0.47</td>
+<td id="T_d7510_row45_col1" class="data row45 col1">99.2%</td>
+<td id="T_d7510_row45_col2" class="data row45 col2">7.7%</td>
+<td id="T_d7510_row45_col3" class="data row45 col3">51.1%</td>
+<td id="T_d7510_row45_col4" class="data row45 col4">4.9%</td>
+<td id="T_d7510_row45_col5" class="data row45 col5">13,843,432,335</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row46" class="row_heading level0 row46" data-quarto-table-cell-role="th">46</th>
+<td id="T_d7510_row46_col0" class="data row46 col0">0.48</td>
+<td id="T_d7510_row46_col1" class="data row46 col1">99.3%</td>
+<td id="T_d7510_row46_col2" class="data row46 col2">7.8%</td>
+<td id="T_d7510_row46_col3" class="data row46 col3">52.2%</td>
+<td id="T_d7510_row46_col4" class="data row46 col4">4.5%</td>
+<td id="T_d7510_row46_col5" class="data row46 col5">13,813,868,764</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row47" class="row_heading level0 row47" data-quarto-table-cell-role="th">47</th>
+<td id="T_d7510_row47_col0" class="data row47 col0">0.49</td>
+<td id="T_d7510_row47_col1" class="data row47 col1">99.4%</td>
+<td id="T_d7510_row47_col2" class="data row47 col2">7.8%</td>
+<td id="T_d7510_row47_col3" class="data row47 col3">53.2%</td>
+<td id="T_d7510_row47_col4" class="data row47 col4">4.1%</td>
+<td id="T_d7510_row47_col5" class="data row47 col5">13,785,551,512</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row48" class="row_heading level0 row48" data-quarto-table-cell-role="th">48</th>
+<td id="T_d7510_row48_col0" class="data row48 col0">0.50</td>
+<td id="T_d7510_row48_col1" class="data row48 col1">99.4%</td>
+<td id="T_d7510_row48_col2" class="data row48 col2">7.8%</td>
+<td id="T_d7510_row48_col3" class="data row48 col3">53.6%</td>
+<td id="T_d7510_row48_col4" class="data row48 col4">3.8%</td>
+<td id="T_d7510_row48_col5" class="data row48 col5">13,760,216,251</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row49" class="row_heading level0 row49" data-quarto-table-cell-role="th">49</th>
+<td id="T_d7510_row49_col0" class="data row49 col0">0.51</td>
+<td id="T_d7510_row49_col1" class="data row49 col1">99.5%</td>
+<td id="T_d7510_row49_col2" class="data row49 col2">7.8%</td>
+<td id="T_d7510_row49_col3" class="data row49 col3">54.7%</td>
+<td id="T_d7510_row49_col4" class="data row49 col4">3.5%</td>
+<td id="T_d7510_row49_col5" class="data row49 col5">13,741,049,659</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row50" class="row_heading level0 row50" data-quarto-table-cell-role="th">50</th>
+<td id="T_d7510_row50_col0" class="data row50 col0">0.52</td>
+<td id="T_d7510_row50_col1" class="data row50 col1">99.5%</td>
+<td id="T_d7510_row50_col2" class="data row50 col2">7.8%</td>
+<td id="T_d7510_row50_col3" class="data row50 col3">55.6%</td>
+<td id="T_d7510_row50_col4" class="data row50 col4">3.2%</td>
+<td id="T_d7510_row50_col5" class="data row50 col5">13,721,712,129</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row51" class="row_heading level0 row51" data-quarto-table-cell-role="th">51</th>
+<td id="T_d7510_row51_col0" class="data row51 col0">0.53</td>
+<td id="T_d7510_row51_col1" class="data row51 col1">99.6%</td>
+<td id="T_d7510_row51_col2" class="data row51 col2">7.9%</td>
+<td id="T_d7510_row51_col3" class="data row51 col3">56.6%</td>
+<td id="T_d7510_row51_col4" class="data row51 col4">3.0%</td>
+<td id="T_d7510_row51_col5" class="data row51 col5">13,697,077,525</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row52" class="row_heading level0 row52" data-quarto-table-cell-role="th">52</th>
+<td id="T_d7510_row52_col0" class="data row52 col0">0.54</td>
+<td id="T_d7510_row52_col1" class="data row52 col1">99.6%</td>
+<td id="T_d7510_row52_col2" class="data row52 col2">7.9%</td>
+<td id="T_d7510_row52_col3" class="data row52 col3">57.8%</td>
+<td id="T_d7510_row52_col4" class="data row52 col4">2.7%</td>
+<td id="T_d7510_row52_col5" class="data row52 col5">13,679,065,507</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row53" class="row_heading level0 row53" data-quarto-table-cell-role="th">53</th>
+<td id="T_d7510_row53_col0" class="data row53 col0">0.55</td>
+<td id="T_d7510_row53_col1" class="data row53 col1">99.7%</td>
+<td id="T_d7510_row53_col2" class="data row53 col2">7.9%</td>
+<td id="T_d7510_row53_col3" class="data row53 col3">58.2%</td>
+<td id="T_d7510_row53_col4" class="data row53 col4">2.4%</td>
+<td id="T_d7510_row53_col5" class="data row53 col5">13,656,539,285</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row54" class="row_heading level0 row54" data-quarto-table-cell-role="th">54</th>
+<td id="T_d7510_row54_col0" class="data row54 col0">0.56</td>
+<td id="T_d7510_row54_col1" class="data row54 col1">99.7%</td>
+<td id="T_d7510_row54_col2" class="data row54 col2">7.9%</td>
+<td id="T_d7510_row54_col3" class="data row54 col3">58.5%</td>
+<td id="T_d7510_row54_col4" class="data row54 col4">2.3%</td>
+<td id="T_d7510_row54_col5" class="data row54 col5">13,642,140,189</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row55" class="row_heading level0 row55" data-quarto-table-cell-role="th">55</th>
+<td id="T_d7510_row55_col0" class="data row55 col0">0.57</td>
+<td id="T_d7510_row55_col1" class="data row55 col1">99.7%</td>
+<td id="T_d7510_row55_col2" class="data row55 col2">7.9%</td>
+<td id="T_d7510_row55_col3" class="data row55 col3">59.6%</td>
+<td id="T_d7510_row55_col4" class="data row55 col4">2.0%</td>
+<td id="T_d7510_row55_col5" class="data row55 col5">13,622,953,263</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row56" class="row_heading level0 row56" data-quarto-table-cell-role="th">56</th>
+<td id="T_d7510_row56_col0" class="data row56 col0">0.58</td>
+<td id="T_d7510_row56_col1" class="data row56 col1">99.8%</td>
+<td id="T_d7510_row56_col2" class="data row56 col2">7.9%</td>
+<td id="T_d7510_row56_col3" class="data row56 col3">60.9%</td>
+<td id="T_d7510_row56_col4" class="data row56 col4">1.8%</td>
+<td id="T_d7510_row56_col5" class="data row56 col5">13,610,242,100</td>
+</tr>
+<tr class="even">
+<th id="T_d7510_level0_row57" class="row_heading level0 row57" data-quarto-table-cell-role="th">57</th>
+<td id="T_d7510_row57_col0" class="data row57 col0">0.59</td>
+<td id="T_d7510_row57_col1" class="data row57 col1">99.8%</td>
+<td id="T_d7510_row57_col2" class="data row57 col2">8.0%</td>
+<td id="T_d7510_row57_col3" class="data row57 col3">62.1%</td>
+<td id="T_d7510_row57_col4" class="data row57 col4">1.7%</td>
+<td id="T_d7510_row57_col5" class="data row57 col5">13,600,305,285</td>
+</tr>
+<tr class="odd">
+<th id="T_d7510_level0_row58" class="row_heading level0 row58" data-quarto-table-cell-role="th">58</th>
+<td id="T_d7510_row58_col0" class="data row58 col0">0.60</td>
+<td id="T_d7510_row58_col1" class="data row58 col1">99.8%</td>
+<td id="T_d7510_row58_col2" class="data row58 col2">8.0%</td>
+<td id="T_d7510_row58_col3" class="data row58 col3">63.5%</td>
+<td id="T_d7510_row58_col4" class="data row58 col4">1.5%</td>
+<td id="T_d7510_row58_col5" class="data row58 col5">13,585,574,565</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="economic-assumption-sensitivity" class="level3">
+<h3 class="anchored" data-anchor-id="economic-assumption-sensitivity">Economic-assumption sensitivity</h3>
+<p>Because the exact cost of default and profit on repayment are uncertain, this check repeats the threshold search for each combination of the stated LGD and profit-margin scenarios.</p>
+<div id="economic-sensitivity-table" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-10-26T03:05:18.979295Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-10-26T03:05:18.979225Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-10-26T03:05:50.786252Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-10-26T03:05:50.786032Z&quot;}}" data-execution_count="9">
+<div class="cell-output cell-output-display">
+<style type="text/css">
+</style>
+
+<table id="T_b820e" class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th class="blank level0" data-quarto-table-cell-role="th">&nbsp;</th>
+<th id="T_b820e_level0_col0" class="col_heading level0 col0" data-quarto-table-cell-role="th">LGD</th>
+<th id="T_b820e_level0_col1" class="col_heading level0 col1" data-quarto-table-cell-role="th">Profit margin</th>
+<th id="T_b820e_level0_col2" class="col_heading level0 col2" data-quarto-table-cell-role="th">Profit-maximizing threshold</th>
+<th id="T_b820e_level0_col3" class="col_heading level0 col3" data-quarto-table-cell-role="th">Approval rate</th>
+<th id="T_b820e_level0_col4" class="col_heading level0 col4" data-quarto-table-cell-role="th">Total profit</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th id="T_b820e_level0_row0" class="row_heading level0 row0" data-quarto-table-cell-role="th">0</th>
+<td id="T_b820e_row0_col0" class="data row0 col0">60%</td>
+<td id="T_b820e_row0_col1" class="data row0 col1">10%</td>
+<td id="T_b820e_row0_col2" class="data row0 col2">0.13</td>
+<td id="T_b820e_row0_col3" class="data row0 col3">82.6%</td>
+<td id="T_b820e_row0_col4" class="data row0 col4">10,316,899,292</td>
+</tr>
+<tr class="even">
+<th id="T_b820e_level0_row1" class="row_heading level0 row1" data-quarto-table-cell-role="th">1</th>
+<td id="T_b820e_row1_col0" class="data row1 col0">60%</td>
+<td id="T_b820e_row1_col1" class="data row1 col1">14%</td>
+<td id="T_b820e_row1_col2" class="data row1 col2">0.19</td>
+<td id="T_b820e_row1_col3" class="data row1 col3">90.5%</td>
+<td id="T_b820e_row1_col4" class="data row1 col4">16,549,200,136</td>
+</tr>
+<tr class="odd">
+<th id="T_b820e_level0_row2" class="row_heading level0 row2" data-quarto-table-cell-role="th">2</th>
+<td id="T_b820e_row2_col0" class="data row2 col0">60%</td>
+<td id="T_b820e_row2_col1" class="data row2 col1">18%</td>
+<td id="T_b820e_row2_col2" class="data row2 col2">0.24</td>
+<td id="T_b820e_row2_col3" class="data row2 col3">94.0%</td>
+<td id="T_b820e_row2_col4" class="data row2 col4">23,036,409,813</td>
+</tr>
+<tr class="even">
+<th id="T_b820e_level0_row3" class="row_heading level0 row3" data-quarto-table-cell-role="th">3</th>
+<td id="T_b820e_row3_col0" class="data row3 col0">75%</td>
+<td id="T_b820e_row3_col1" class="data row3 col1">10%</td>
+<td id="T_b820e_row3_col2" class="data row3 col2">0.12</td>
+<td id="T_b820e_row3_col3" class="data row3 col3">80.6%</td>
+<td id="T_b820e_row3_col4" class="data row3 col4">9,230,844,551</td>
+</tr>
+<tr class="odd">
+<th id="T_b820e_level0_row4" class="row_heading level0 row4" data-quarto-table-cell-role="th">4</th>
+<td id="T_b820e_row4_col0" class="data row4 col0">75%</td>
+<td id="T_b820e_row4_col1" class="data row4 col1">14%</td>
+<td id="T_b820e_row4_col2" class="data row4 col2">0.15</td>
+<td id="T_b820e_row4_col3" class="data row4 col3">85.9%</td>
+<td id="T_b820e_row4_col4" class="data row4 col4">15,150,551,015</td>
+</tr>
+<tr class="even">
+<th id="T_b820e_level0_row5" class="row_heading level0 row5" data-quarto-table-cell-role="th">5</th>
+<td id="T_b820e_row5_col0" class="data row5 col0">75%</td>
+<td id="T_b820e_row5_col1" class="data row5 col1">18%</td>
+<td id="T_b820e_row5_col2" class="data row5 col2">0.21</td>
+<td id="T_b820e_row5_col3" class="data row5 col3">92.1%</td>
+<td id="T_b820e_row5_col4" class="data row5 col4">21,493,711,491</td>
+</tr>
+<tr class="odd">
+<th id="T_b820e_level0_row6" class="row_heading level0 row6" data-quarto-table-cell-role="th">6</th>
+<td id="T_b820e_row6_col0" class="data row6 col0">90%</td>
+<td id="T_b820e_row6_col1" class="data row6 col1">10%</td>
+<td id="T_b820e_row6_col2" class="data row6 col2">0.10</td>
+<td id="T_b820e_row6_col3" class="data row6 col3">75.5%</td>
+<td id="T_b820e_row6_col4" class="data row6 col4">8,262,089,624</td>
+</tr>
+<tr class="even">
+<th id="T_b820e_level0_row7" class="row_heading level0 row7" data-quarto-table-cell-role="th">7</th>
+<td id="T_b820e_row7_col0" class="data row7 col0">90%</td>
+<td id="T_b820e_row7_col1" class="data row7 col1">14%</td>
+<td id="T_b820e_row7_col2" class="data row7 col2">0.13</td>
+<td id="T_b820e_row7_col3" class="data row7 col3">82.6%</td>
+<td id="T_b820e_row7_col4" class="data row7 col4">13,991,431,381</td>
+</tr>
+<tr class="odd">
+<th id="T_b820e_level0_row8" class="row_heading level0 row8" data-quarto-table-cell-role="th">8</th>
+<td id="T_b820e_row8_col0" class="data row8 col0">90%</td>
+<td id="T_b820e_row8_col1" class="data row8 col1">18%</td>
+<td id="T_b820e_row8_col2" class="data row8 col2">0.18</td>
+<td id="T_b820e_row8_col3" class="data row8 col3">89.5%</td>
+<td id="T_b820e_row8_col4" class="data row8 col4">20,054,185,538</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<div id="chosen-threshold-summary" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-10-26T03:05:50.787282Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-10-26T03:05:50.787215Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-10-26T03:05:50.789301Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-10-26T03:05:50.789128Z&quot;}}" data-execution_count="10">
+<section id="recommended-threshold-under-the-base-scenario-0.15" class="level3 cell-output cell-output-display cell-output-markdown">
+<h3 class="anchored" data-anchor-id="recommended-threshold-under-the-base-scenario-0.15">Recommended threshold under the base scenario: 0.15</h3>
+<p>At this threshold, <strong>precision is 24.5%</strong> and <strong>recall is 42.8%</strong>. The modeled approval rate is <strong>85.9%</strong>, the observed default rate among approved applicants is <strong>5.4%</strong>, and the estimated total profit is <strong>15,150,551,015</strong> in <code>AMT_CREDIT</code> units.</p>
+<p>In plain language, lowering the threshold denies or reviews more applicants, which catches more eventual defaults but also turns away more loans that would have repaid. Raising it approves more applicants, which preserves lending volume but exposes the portfolio to more defaults. Under the stated 14% margin and 75% LGD assumptions, 0.15 produces the largest out-of-fold historical profit estimate among the tested thresholds. This is a decision-support recommendation, not an automatic-denial rule; business, legal, compliance, and fairness review are still required before deployment.</p>
+</section>
+</div>
+</section>
+<section id="explainability" class="level2">
+<h2 class="anchored" data-anchor-id="explainability">5. Explainability</h2>
+<p>SHAP (SHapley Additive exPlanations) shows how each model input moved an individual prediction up or down relative to the model’s average prediction. These charts use a random sample of 1,000 training applications selected with random state 42. They describe patterns learned by the model; they do not establish that a feature causes default.</p>
+<p>In the beeswarm plot, each dot is an application. Dots to the right increased the model’s predicted default risk and dots to the left reduced it. Color shows whether the feature value was relatively high or low.</p>
+<div id="shap-explanations" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-10-26T03:05:50.790233Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-10-26T03:05:50.790169Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-10-26T03:05:52.005136Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-10-26T03:05:52.004893Z&quot;}}" data-execution_count="11">
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="03_model_card_files/figure-html/cell-12-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="shap-top-features" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-10-26T03:05:52.006251Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-10-26T03:05:52.006179Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-10-26T03:05:52.062034Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-10-26T03:05:52.061814Z&quot;}}" data-execution_count="12">
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="03_model_card_files/figure-html/cell-13-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<style type="text/css">
+</style>
+
+<table id="T_8918b" class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th class="blank level0" data-quarto-table-cell-role="th">&nbsp;</th>
+<th id="T_8918b_level0_col0" class="col_heading level0 col0" data-quarto-table-cell-role="th">Feature</th>
+<th id="T_8918b_level0_col1" class="col_heading level0 col1" data-quarto-table-cell-role="th">Mean absolute SHAP value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th id="T_8918b_level0_row0" class="row_heading level0 row0" data-quarto-table-cell-role="th">0</th>
+<td id="T_8918b_row0_col0" class="data row0 col0">numeric__EXT_SOURCE_2</td>
+<td id="T_8918b_row0_col1" class="data row0 col1">0.3208</td>
+</tr>
+<tr class="even">
+<th id="T_8918b_level0_row1" class="row_heading level0 row1" data-quarto-table-cell-role="th">1</th>
+<td id="T_8918b_row1_col0" class="data row1 col0">numeric__EXT_SOURCE_3</td>
+<td id="T_8918b_row1_col1" class="data row1 col1">0.2785</td>
+</tr>
+<tr class="odd">
+<th id="T_8918b_level0_row2" class="row_heading level0 row2" data-quarto-table-cell-role="th">2</th>
+<td id="T_8918b_row2_col0" class="data row2 col0">numeric__EXT_SOURCE_1</td>
+<td id="T_8918b_row2_col1" class="data row2 col1">0.1374</td>
+</tr>
+<tr class="even">
+<th id="T_8918b_level0_row3" class="row_heading level0 row3" data-quarto-table-cell-role="th">3</th>
+<td id="T_8918b_row3_col0" class="data row3 col0">numeric__CREDIT_TO_GOODS_PRICE</td>
+<td id="T_8918b_row3_col1" class="data row3 col1">0.1324</td>
+</tr>
+<tr class="odd">
+<th id="T_8918b_level0_row4" class="row_heading level0 row4" data-quarto-table-cell-role="th">4</th>
+<td id="T_8918b_row4_col0" class="data row4 col0">numeric__AMT_GOODS_PRICE</td>
+<td id="T_8918b_row4_col1" class="data row4 col1">0.1165</td>
+</tr>
+<tr class="even">
+<th id="T_8918b_level0_row5" class="row_heading level0 row5" data-quarto-table-cell-role="th">5</th>
+<td id="T_8918b_row5_col0" class="data row5 col0">numeric__AMT_ANNUITY</td>
+<td id="T_8918b_row5_col1" class="data row5 col1">0.1027</td>
+</tr>
+<tr class="odd">
+<th id="T_8918b_level0_row6" class="row_heading level0 row6" data-quarto-table-cell-role="th">6</th>
+<td id="T_8918b_row6_col0" class="data row6 col0">categorical__CODE_GENDER_F</td>
+<td id="T_8918b_row6_col1" class="data row6 col1">0.0921</td>
+</tr>
+<tr class="even">
+<th id="T_8918b_level0_row7" class="row_heading level0 row7" data-quarto-table-cell-role="th">7</th>
+<td id="T_8918b_row7_col0" class="data row7 col0">numeric__BUREAU_DAYS_CREDIT_ENDDATE_MAX</td>
+<td id="T_8918b_row7_col1" class="data row7 col1">0.0776</td>
+</tr>
+<tr class="odd">
+<th id="T_8918b_level0_row8" class="row_heading level0 row8" data-quarto-table-cell-role="th">8</th>
+<td id="T_8918b_row8_col0" class="data row8 col0">numeric__DAYS_EMPLOYED</td>
+<td id="T_8918b_row8_col1" class="data row8 col1">0.0773</td>
+</tr>
+<tr class="even">
+<th id="T_8918b_level0_row9" class="row_heading level0 row9" data-quarto-table-cell-role="th">9</th>
+<td id="T_8918b_row9_col0" class="data row9 col0">numeric__BUREAU_AMT_CREDIT_SUM_DEBT_MEAN</td>
+<td id="T_8918b_row9_col1" class="data row9 col1">0.0747</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<section id="plain-english-interpretation" class="level3">
+<h3 class="anchored" data-anchor-id="plain-english-interpretation">Plain-English interpretation</h3>
+<p>The three external-source scores (<code>EXT_SOURCE_2</code>, <code>EXT_SOURCE_3</code>, and <code>EXT_SOURCE_1</code>) are the strongest features in this sample. Higher values of each were generally associated with <strong>lower</strong> predicted default risk.</p>
+<p>A higher credit-to-goods-price ratio and a higher annuity amount were generally associated with <strong>higher</strong> predicted risk. The model also uses prior-credit context: a later maximum bureau credit-end date and a higher average prior-credit debt amount were generally associated with <strong>higher</strong> predicted risk in this sample. Employment history and the gender indicator also contributed, but less than the leading external-source and affordability features.</p>
+<p>These are model associations, not explanations of why an applicant may default. They should be reviewed for policy, data-quality, fairness, and adverse-action implications before being used in a lending workflow.</p>
+</section>
+</section>
+<section id="adverse-action-mapping" class="level2">
+<h2 class="anchored" data-anchor-id="adverse-action-mapping">6. Adverse Action Mapping</h2>
+<p>The table below translates the model’s top SHAP features into draft consumer-facing reason language. It is a design aid, not an approved adverse-action notice. Under the U.S. Equal Credit Opportunity Act (ECOA) and Regulation B, a creditor taking adverse action must provide specific and accurate principal reasons for the action; this obligation applies when complex algorithms are used. See the <a href="https://www.consumerfinance.gov/compliance/circulars/circular-2022-03-adverse-action-notification-requirements-in-connection-with-credit-decisions-based-on-complex-algorithms/">CFPB’s Circular 2022-03</a>. Legal and compliance teams must validate the mapping, reason selection, reason ordering, data provenance, and notice process before any deployment.</p>
+<blockquote class="blockquote">
+<p><strong>Protected-characteristic safeguard:</strong> <code>CODE_GENDER_F</code> is a sex-related indicator. It is shown because it appears among the model’s top technical features, but it must not be used as a consumer-facing denial reason. Its presence requires governance review and likely removal or mitigation before any production credit decision.</p>
+</blockquote>
+<div id="adverse-action-map-table" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-10-26T03:05:52.063171Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-10-26T03:05:52.063108Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-10-26T03:05:52.067717Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-10-26T03:05:52.067529Z&quot;}}" data-execution_count="13">
+<div class="cell-output cell-output-display">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">Technical feature</th>
+<th data-quarto-table-cell-role="th">Direction that increases risk</th>
+<th data-quarto-table-cell-role="th">Human-readable denial reason</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">0</th>
+<td>numeric__EXT_SOURCE_2</td>
+<td>Lower value</td>
+<td>Limited or weak credit history with external a...</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">1</th>
+<td>numeric__EXT_SOURCE_3</td>
+<td>Lower value</td>
+<td>Limited or weak credit history with external a...</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">2</th>
+<td>numeric__EXT_SOURCE_1</td>
+<td>Lower value</td>
+<td>Limited or weak credit history with external a...</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">3</th>
+<td>numeric__CREDIT_TO_GOODS_PRICE</td>
+<td>Higher value</td>
+<td>Requested credit is high relative to the value...</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">4</th>
+<td>numeric__AMT_GOODS_PRICE</td>
+<td>Lower value</td>
+<td>Lower stated value of goods being financed</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">5</th>
+<td>numeric__AMT_ANNUITY</td>
+<td>Higher value</td>
+<td>Higher scheduled loan payment amount</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">6</th>
+<td>categorical__CODE_GENDER_F</td>
+<td>Feature absent (not female)</td>
+<td>Do not use: protected sex-related characterist...</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">7</th>
+<td>numeric__BUREAU_DAYS_CREDIT_ENDDATE_MAX</td>
+<td>Higher value</td>
+<td>Longer remaining commitments in prior credit h...</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">8</th>
+<td>numeric__DAYS_EMPLOYED</td>
+<td>Higher value (closer to zero)</td>
+<td>Shorter reported employment tenure</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">9</th>
+<td>numeric__BUREAU_AMT_CREDIT_SUM_DEBT_MEAN</td>
+<td>Higher value</td>
+<td>Higher average outstanding debt in prior credi...</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<section id="illustrative-denied-applicant-reasons" class="level3">
+<h3 class="anchored" data-anchor-id="illustrative-denied-applicant-reasons">Illustrative denied-applicant reasons</h3>
+<p>The examples below are the three highest out-of-fold risk scores at or above the chosen threshold. Each reason is drawn from that applicant’s largest positive SHAP contributions, after excluding the protected sex-related indicator. They demonstrate a traceable explanation workflow only; they are not customer notices and should never be issued without the required validation and compliance review.</p>
+<div id="denied-applicant-examples" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-10-26T03:05:52.068682Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-10-26T03:05:52.068621Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-10-26T03:05:52.746679Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-10-26T03:05:52.746474Z&quot;}}" data-execution_count="14">
+<div class="cell-output cell-output-display">
+<style type="text/css">
+</style>
+
+<table id="T_3274a" class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th class="blank level0" data-quarto-table-cell-role="th">&nbsp;</th>
+<th id="T_3274a_level0_col0" class="col_heading level0 col0" data-quarto-table-cell-role="th">Applicant ID</th>
+<th id="T_3274a_level0_col1" class="col_heading level0 col1" data-quarto-table-cell-role="th">Out-of-fold default-risk score</th>
+<th id="T_3274a_level0_col2" class="col_heading level0 col2" data-quarto-table-cell-role="th">Reason 1</th>
+<th id="T_3274a_level0_col3" class="col_heading level0 col3" data-quarto-table-cell-role="th">Reason 2</th>
+<th id="T_3274a_level0_col4" class="col_heading level0 col4" data-quarto-table-cell-role="th">Reason 3</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th id="T_3274a_level0_row0" class="row_heading level0 row0" data-quarto-table-cell-role="th">0</th>
+<td id="T_3274a_row0_col0" class="data row0 col0">172897</td>
+<td id="T_3274a_row0_col1" class="data row0 col1">93.0%</td>
+<td id="T_3274a_row0_col2" class="data row0 col2">Limited or weak credit history with external agencies</td>
+<td id="T_3274a_row0_col3" class="data row0 col3">Requested credit is high relative to the value of goods financed</td>
+<td id="T_3274a_row0_col4" class="data row0 col4">Lower stated value of goods being financed</td>
+</tr>
+<tr class="even">
+<th id="T_3274a_level0_row1" class="row_heading level0 row1" data-quarto-table-cell-role="th">1</th>
+<td id="T_3274a_row1_col0" class="data row1 col0">262411</td>
+<td id="T_3274a_row1_col1" class="data row1 col1">92.3%</td>
+<td id="T_3274a_row1_col2" class="data row1 col2">Limited or weak credit history with external agencies</td>
+<td id="T_3274a_row1_col3" class="data row1 col3">Lower stated value of goods being financed</td>
+<td id="T_3274a_row1_col4" class="data row1 col4">Requested credit is high relative to the value of goods financed</td>
+</tr>
+<tr class="odd">
+<th id="T_3274a_level0_row2" class="row_heading level0 row2" data-quarto-table-cell-role="th">2</th>
+<td id="T_3274a_row2_col0" class="data row2 col0">325932</td>
+<td id="T_3274a_row2_col1" class="data row2 col1">91.2%</td>
+<td id="T_3274a_row2_col2" class="data row2 col2">Limited or weak credit history with external agencies</td>
+<td id="T_3274a_row2_col3" class="data row2 col3">Higher average outstanding debt in prior credit history</td>
+<td id="T_3274a_row2_col4" class="data row2 col4">Lower stated value of goods being financed</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</section>
+<section id="fairness-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="fairness-analysis">7. Fairness Analysis</h2>
+<p>This screening compares outcomes at the selected decision threshold across recorded gender and education groups, using the out-of-fold scores. It reports group size, observed default rate, approval rate, and the approval-rate ratio relative to the most-approved group. A ratio below 0.80 is flagged using the four-fifths rule requested for this analysis.</p>
+<blockquote class="blockquote">
+<p><strong>Important:</strong> The four-fifths rule is an employment-selection rule of thumb, not a lending safe harbor or a legal conclusion. The EEOC explains that it is a practical screening tool rather than a legal definition; see its <a href="https://www.eeoc.gov/es/node/130157">Uniform Guidelines Q&amp;A</a>. For credit decisions, ECOA and Regulation B prohibit discrimination on protected bases, including sex; see the CFPB’s <a href="https://www.consumerfinance.gov/consumer-tools/credit-reports-and-scores/credit-discrimination-is-illegal/">credit-discrimination guidance</a>. Legal and compliance review is required before deployment.</p>
+</blockquote>
+<div id="fairness-group-tables" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-10-26T03:05:52.747792Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-10-26T03:05:52.747729Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-10-26T03:05:53.575101Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-10-26T03:05:53.574906Z&quot;}}" data-execution_count="15">
+<section id="gender-comparison" class="level3 cell-output cell-output-display cell-output-markdown">
+<h3 class="anchored" data-anchor-id="gender-comparison">Gender comparison</h3>
+</section>
+<div class="cell-output cell-output-display">
+<style type="text/css">
+</style>
+
+<table id="T_42647" class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th class="blank level0" data-quarto-table-cell-role="th">&nbsp;</th>
+<th id="T_42647_level0_col0" class="col_heading level0 col0" data-quarto-table-cell-role="th">CODE_GENDER</th>
+<th id="T_42647_level0_col1" class="col_heading level0 col1" data-quarto-table-cell-role="th">Count</th>
+<th id="T_42647_level0_col2" class="col_heading level0 col2" data-quarto-table-cell-role="th">Actual default rate</th>
+<th id="T_42647_level0_col3" class="col_heading level0 col3" data-quarto-table-cell-role="th">Approval rate</th>
+<th id="T_42647_level0_col4" class="col_heading level0 col4" data-quarto-table-cell-role="th">Approval-rate ratio</th>
+<th id="T_42647_level0_col5" class="col_heading level0 col5" data-quarto-table-cell-role="th">Four-fifths screen</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th id="T_42647_level0_row0" class="row_heading level0 row0" data-quarto-table-cell-role="th">0</th>
+<td id="T_42647_row0_col0" class="data row0 col0">F</td>
+<td id="T_42647_row0_col1" class="data row0 col1">202448</td>
+<td id="T_42647_row0_col2" class="data row0 col2">7.0%</td>
+<td id="T_42647_row0_col3" class="data row0 col3">89.2%</td>
+<td id="T_42647_row0_col4" class="data row0 col4">100.0%</td>
+<td id="T_42647_row0_col5" class="data row0 col5">No flag</td>
+</tr>
+<tr class="even">
+<th id="T_42647_level0_row1" class="row_heading level0 row1" data-quarto-table-cell-role="th">1</th>
+<td id="T_42647_row1_col0" class="data row1 col0">M</td>
+<td id="T_42647_row1_col1" class="data row1 col1">105059</td>
+<td id="T_42647_row1_col2" class="data row1 col2">10.1%</td>
+<td id="T_42647_row1_col3" class="data row1 col3">79.6%</td>
+<td id="T_42647_row1_col4" class="data row1 col4">89.2%</td>
+<td id="T_42647_row1_col5" class="data row1 col5">No flag</td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="education-comparison" class="level3 cell-output cell-output-display cell-output-markdown">
+<h3 class="anchored" data-anchor-id="education-comparison">Education comparison</h3>
+</section>
+<div class="cell-output cell-output-display">
+<style type="text/css">
+</style>
+
+<table id="T_24730" class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th class="blank level0" data-quarto-table-cell-role="th">&nbsp;</th>
+<th id="T_24730_level0_col0" class="col_heading level0 col0" data-quarto-table-cell-role="th">NAME_EDUCATION_TYPE</th>
+<th id="T_24730_level0_col1" class="col_heading level0 col1" data-quarto-table-cell-role="th">Count</th>
+<th id="T_24730_level0_col2" class="col_heading level0 col2" data-quarto-table-cell-role="th">Actual default rate</th>
+<th id="T_24730_level0_col3" class="col_heading level0 col3" data-quarto-table-cell-role="th">Approval rate</th>
+<th id="T_24730_level0_col4" class="col_heading level0 col4" data-quarto-table-cell-role="th">Approval-rate ratio</th>
+<th id="T_24730_level0_col5" class="col_heading level0 col5" data-quarto-table-cell-role="th">Four-fifths screen</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th id="T_24730_level0_row0" class="row_heading level0 row0" data-quarto-table-cell-role="th">0</th>
+<td id="T_24730_row0_col0" class="data row0 col0">Higher education</td>
+<td id="T_24730_row0_col1" class="data row0 col1">74862</td>
+<td id="T_24730_row0_col2" class="data row0 col2">5.4%</td>
+<td id="T_24730_row0_col3" class="data row0 col3">93.5%</td>
+<td id="T_24730_row0_col4" class="data row0 col4">100.0%</td>
+<td id="T_24730_row0_col5" class="data row0 col5">No flag</td>
+</tr>
+<tr class="even">
+<th id="T_24730_level0_row1" class="row_heading level0 row1" data-quarto-table-cell-role="th">1</th>
+<td id="T_24730_row1_col0" class="data row1 col0">Academic degree</td>
+<td id="T_24730_row1_col1" class="data row1 col1">164</td>
+<td id="T_24730_row1_col2" class="data row1 col2">1.8%</td>
+<td id="T_24730_row1_col3" class="data row1 col3">87.2%</td>
+<td id="T_24730_row1_col4" class="data row1 col4">93.2%</td>
+<td id="T_24730_row1_col5" class="data row1 col5">No flag</td>
+</tr>
+<tr class="odd">
+<th id="T_24730_level0_row2" class="row_heading level0 row2" data-quarto-table-cell-role="th">2</th>
+<td id="T_24730_row2_col0" class="data row2 col0">Incomplete higher</td>
+<td id="T_24730_row2_col1" class="data row2 col1">10276</td>
+<td id="T_24730_row2_col2" class="data row2 col2">8.5%</td>
+<td id="T_24730_row2_col3" class="data row2 col3">84.4%</td>
+<td id="T_24730_row2_col4" class="data row2 col4">90.2%</td>
+<td id="T_24730_row2_col5" class="data row2 col5">No flag</td>
+</tr>
+<tr class="even">
+<th id="T_24730_level0_row3" class="row_heading level0 row3" data-quarto-table-cell-role="th">3</th>
+<td id="T_24730_row3_col0" class="data row3 col0">Secondary / secondary special</td>
+<td id="T_24730_row3_col1" class="data row3 col1">218389</td>
+<td id="T_24730_row3_col2" class="data row3 col2">8.9%</td>
+<td id="T_24730_row3_col3" class="data row3 col3">83.5%</td>
+<td id="T_24730_row3_col4" class="data row3 col4">89.3%</td>
+<td id="T_24730_row3_col5" class="data row3 col5">No flag</td>
+</tr>
+<tr class="odd">
+<th id="T_24730_level0_row4" class="row_heading level0 row4" data-quarto-table-cell-role="th">4</th>
+<td id="T_24730_row4_col0" class="data row4 col0">Lower secondary</td>
+<td id="T_24730_row4_col1" class="data row4 col1">3816</td>
+<td id="T_24730_row4_col2" class="data row4 col2">10.9%</td>
+<td id="T_24730_row4_col3" class="data row4 col3">79.0%</td>
+<td id="T_24730_row4_col4" class="data row4 col4">84.5%</td>
+<td id="T_24730_row4_col5" class="data row4 col5">No flag</td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="observed-disparity-summary" class="level3 cell-output cell-output-display cell-output-markdown">
+<h3 class="anchored" data-anchor-id="observed-disparity-summary">Observed disparity summary</h3>
+<p>The four-fifths screen flags <strong>0</strong> of the displayed groups. The gender approval gap is <strong>9.6%</strong>: <code>F</code> has a 89.2% approval rate and <code>M</code> has a 79.6% approval rate. Their observed default rates are 7.0% and 10.1%, respectively.</p>
+<p>For education, <code>Higher education</code> has the highest approval rate (93.5%) and <code>Lower secondary</code> the lowest (79.0%); their observed default rates are 5.4% and 10.9%. These observed-rate differences provide context but do not by themselves justify the approval gaps or rule out proxy risk.</p>
+</section>
+</div>
+<div id="fairness-approval-chart" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-10-26T03:05:53.576077Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-10-26T03:05:53.576008Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-10-26T03:05:53.642609Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-10-26T03:05:53.642385Z&quot;}}" data-execution_count="16">
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="03_model_card_files/figure-html/cell-17-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<section id="interpretation-and-implications" class="level3">
+<h3 class="anchored" data-anchor-id="interpretation-and-implications">Interpretation and implications</h3>
+<p>A flagged approval-rate ratio identifies a material difference in who advances under this particular threshold; it does not prove unlawful discrimination, nor does the absence of a flag establish fairness. The observed default-rate column provides important context: a lower approval rate may coincide with a higher recorded default rate, but that comparison alone cannot establish that the gap is justified, necessary, or free of model error.</p>
+<p>Gender is a protected characteristic under ECOA, so any gender disparity requires immediate legal and compliance review. Education is not a substitute protected-class analysis, but it can be a proxy for socioeconomic conditions or other protected characteristics and should be monitored as a potential proxy-risk signal. The model’s direct use of <code>CODE_GENDER</code>—already visible in the SHAP analysis—is a deployment blocker until governance determines whether the feature must be removed, the model refit, and the resulting outcomes independently revalidated.</p>
+<p>Before deploying any threshold, the credit-risk, legal, compliance, and fair-lending teams should review the data definitions, sampling and outcome quality, relevant protected-group analyses, proxy features, error rates, threshold alternatives, and adverse-action process. This notebook is a preliminary diagnostic, not a legal conclusion.</p>
+</section>
+</section>
+<section id="limitations-and-risks" class="level2">
+<h2 class="anchored" data-anchor-id="limitations-and-risks">8. Limitations and Risks</h2>
+<ul>
+<li><strong>Validation gap:</strong> The three-fold cross-validated AUC (0.7645) exceeds the private Kaggle AUC (0.75871). This suggests the internal validation estimate was somewhat optimistic and future performance could be lower.</li>
+<li><strong>Limited setting and time period:</strong> The data comes from a single lender and historical 2018 Kaggle competition data. It may not represent current applicants, other lenders, countries, products, economic conditions, or underwriting policies.</li>
+<li><strong>Opaque external scores:</strong> <code>EXT_SOURCE_1</code>, <code>EXT_SOURCE_2</code>, and <code>EXT_SOURCE_3</code> are leading model inputs, but their underlying definitions, collection methods, coverage, and fairness properties are not transparent in this dataset.</li>
+<li><strong>Missing decision information:</strong> The model does not include verified income, nor does it use prior application decisions and outcomes. Missing or unavailable information can change both risk estimates and the fairness of decisions.</li>
+<li><strong>Population and process drift:</strong> Applicant mix, bureau coverage, data definitions, credit policy, collections, and macroeconomic conditions can change after deployment. Performance, calibration, missingness, feature distributions, approval outcomes, and fairness metrics need ongoing monitoring.</li>
+<li><strong>Fairness and proxy risk:</strong> The current model directly uses a sex-related indicator and may learn proxies for protected characteristics through external scores, education, geography, occupation, or credit-history fields. The preliminary checks in this card do not resolve those risks.</li>
+<li><strong>Threshold economics are assumptions:</strong> The selected 0.15 threshold is sensitive to the assumed 14% profit margin and 75% loss given default. Net interest margin excludes operating costs, and recoveries, fraud, prepayments, funding costs, capital costs, and customer impact are not fully modeled.</li>
+</ul>
+<p>These limitations support a controlled, monitored review workflow—not unattended automated underwriting—until the identified data, governance, fairness, legal, and economic issues are addressed.</p>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
